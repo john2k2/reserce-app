@@ -6,9 +6,36 @@ const user = {
 };
 ---
 
-<header class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm mb-6 flex items-center justify-between">
+<header class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
+  <!-- Logo para móviles -->
+  <div class="flex items-center justify-between w-full sm:hidden">
+    <div class="flex items-center">
+      <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white font-bold text-xl mr-3">Q</div>
+      <span class="text-lg font-bold text-gray-900 dark:text-white">QueueMaster</span>
+    </div>
+    
+    <!-- Opciones de usuario móvil -->
+    <div class="flex items-center space-x-2">
+      <button class="relative p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        </svg>
+        <span class="absolute top-1 right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-500 rounded-full">3</span>
+      </button>
+      
+      <div class="w-9 h-9 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
+        <img 
+          src={user.avatar} 
+          alt={user.name} 
+          class="w-full h-full object-cover"
+          onerror="this.src='/avatars/default.jpg'; this.onerror=null;"
+        />
+      </div>
+    </div>
+  </div>
+  
   <!-- Buscador -->
-  <div class="relative flex-1 max-w-lg">
+  <div class="relative flex-1 w-full max-w-lg">
     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
       <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -21,8 +48,8 @@ const user = {
     />
   </div>
   
-  <!-- Acciones del usuario -->
-  <div class="flex items-center space-x-4">
+  <!-- Acciones del usuario (visible en tablet y desktop) -->
+  <div class="hidden sm:flex items-center space-x-4">
     <button class="relative p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
       <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />

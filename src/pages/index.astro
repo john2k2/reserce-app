@@ -12,19 +12,48 @@ import ReservationHistory from '../components/ReservationHistory.astro';
   <div class="container mx-auto p-4">
     <Header />
     
-    <div class="grid grid-cols-12 gap-6">
-      <div class="col-span-3">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Sidebar - oculto en móvil, visible como modal en tablet, columna en desktop -->
+      <div class="hidden lg:block lg:col-span-3">
         <Sidebar />
       </div>
+
+      <!-- Botón para mostrar sidebar en móvil y tablet -->
+      <button id="mobile-menu-button" class="fixed bottom-4 right-4 lg:hidden bg-primary text-white p-3 rounded-full shadow-lg z-50">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+
+      <!-- Modal del Sidebar para móvil y tablet -->
+      <div id="mobile-menu" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="absolute right-0 top-0 h-full w-64 bg-white dark:bg-gray-800 transform transition-transform duration-300 ease-in-out">
+          <button id="close-menu" class="absolute top-4 right-4 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+          <div class="p-4 h-full overflow-y-auto">
+            <Sidebar />
+          </div>
+        </div>
+      </div>
       
-      <div class="col-span-9">
-        <div class="grid grid-cols-2 gap-6 mb-6">
+      <!-- Contenido principal -->
+      <div class="col-span-1 lg:col-span-9">
+        <!-- Fila actual y servicios disponibles -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <CurrentQueue />
           <AvailableServices />
         </div>
         
+        <!-- Representantes destacados -->
         <FeaturedQueuers />
         
+        <!-- Historial de reservas -->
         <div class="mt-6">
           <ReservationHistory />
         </div>
@@ -32,3 +61,48 @@ import ReservationHistory from '../components/ReservationHistory.astro';
     </div>
   </div>
 </Layout>
+
+<script>
+  // Script para manejar el menú móvil
+  document.addEventListener('DOMContentLoaded', () => {
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    const mobileMenu = document.getElementById('mobile-menu');
+    const closeMenu = document.getElementById('close-menu');
+    
+    if (mobileMenuButton && mobileMenu && closeMenu) {
+      mobileMenuButton.addEventListener('click', () => {
+        mobileMenu.classList.remove('hidden');
+        const sidebar = mobileMenu.querySelector('div');
+        if (sidebar) {
+          sidebar.classList.add('translate-x-0');
+          sidebar.classList.remove('translate-x-full');
+        }
+      });
+      
+      closeMenu.addEventListener('click', () => {
+        const sidebar = mobileMenu.querySelector('div');
+        if (sidebar) {
+          sidebar.classList.remove('translate-x-0');
+          sidebar.classList.add('translate-x-full');
+          setTimeout(() => {
+            mobileMenu.classList.add('hidden');
+          }, 300);
+        }
+      });
+      
+      // Cerrar menú al hacer clic fuera del sidebar
+      mobileMenu.addEventListener('click', (e) => {
+        if (e.target === mobileMenu) {
+          const sidebar = mobileMenu.querySelector('div');
+          if (sidebar) {
+            sidebar.classList.remove('translate-x-0');
+            sidebar.classList.add('translate-x-full');
+            setTimeout(() => {
+              mobileMenu.classList.add('hidden');
+            }, 300);
+          }
+        }
+      });
+    }
+  });
+</script>

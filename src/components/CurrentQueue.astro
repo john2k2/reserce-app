@@ -12,9 +12,9 @@ const currentQueue = {
 };
 ---
 
-<div class="bg-white dark:bg-gray-800 rounded-lg p-6 border-l-4 border-[#32CD32] shadow-sm">
+<div class="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 border-l-4 border-[#32CD32] shadow-sm">
   <div class="flex items-center mb-4">
-    <div class="bg-[#EEFBEE] dark:bg-green-900/40 p-2 rounded-lg mr-3">
+    <div class="bg-[#EEFBEE] dark:bg-green-900/40 p-2 rounded-lg mr-3 flex-shrink-0">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#32CD32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
         <circle cx="9" cy="7" r="4"></circle>
@@ -25,7 +25,7 @@ const currentQueue = {
     <h2 class="text-xl font-semibold dark:text-gray-100">Tu fila actual</h2>
   </div>
 
-  <div class="grid grid-cols-2 gap-4 mb-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
     <div>
       <p class="text-gray-600 dark:text-gray-400 mb-1">Evento:</p>
       <p class="font-medium dark:text-gray-200">{currentQueue.location}</p>
@@ -56,7 +56,7 @@ const currentQueue = {
     </div>
   </div>
 
-  <div class="flex items-center">
+  <div class="flex items-center mb-4">
     <a href={`/tracking/${currentQueue.id}`} class="text-primary hover:text-primary-dark flex items-center dark:text-blue-400 dark:hover:text-blue-300">
       Ver ubicación en vivo
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-1">
@@ -67,8 +67,8 @@ const currentQueue = {
     </a>
   </div>
 
-  <div class="flex justify-between mt-6">
-    <button class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">Cancelar</button>
-    <a href={`/messages/${currentQueue.queuerId}`} class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark inline-block">Contactar</a>
+  <div class="flex flex-col sm:flex-row justify-between gap-3 sm:gap-0">
+    <button class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 order-2 sm:order-1">Cancelar</button>
+    <a href={`/messages/${currentQueue.queuerId}`} class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark inline-block text-center order-1 sm:order-2">Contactar</a>
   </div>
 </div> 
