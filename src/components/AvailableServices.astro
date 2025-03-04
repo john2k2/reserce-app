@@ -22,32 +22,61 @@ const services = [
     disponibility: "Mañana" 
   }
 ];
+
+// Helper para navegación con teclado
+const handleKeyDown = `event => {
+  if (event.key === 'Enter') {
+    const url = event.currentTarget.getAttribute('data-url');
+    if (url) window.location.href = url;
+  }
+}`;
 ---
 
-<div class="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 shadow-sm">
-  <h2 class="text-xl font-semibold mb-4 dark:text-gray-100">Servicios disponibles</h2>
+<section class="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 shadow-sm" aria-labelledby="services-heading">
+  <h2 id="services-heading" class="text-xl font-semibold mb-4 dark:text-gray-100 flex items-center">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-primary dark:text-blue-400">
+      <circle cx="12" cy="12" r="10"></circle>
+      <path d="M12 8v4"></path>
+      <path d="M12 16h.01"></path>
+    </svg>
+    Servicios disponibles
+  </h2>
   
   <!-- Tabla visible en tablets y desktop -->
   <div class="hidden sm:block overflow-x-auto">
-    <table class="w-full">
+    <table class="w-full" aria-label="Lista de servicios disponibles">
       <thead>
-        <tr class="bg-[#F5F7FF] dark:bg-gray-700">
-          <th class="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-200 rounded-l-lg">Tipo</th>
-          <th class="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Ubicación</th>
-          <th class="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Precio</th>
-          <th class="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-200 rounded-r-lg">Disponibilidad</th>
+        <tr class="bg-gray-50 dark:bg-gray-700">
+          <th scope="col" class="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-200 rounded-l-lg border-b border-gray-200 dark:border-gray-600">Tipo</th>
+          <th scope="col" class="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-600">Ubicación</th>
+          <th scope="col" class="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-600">Precio</th>
+          <th scope="col" class="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-200 rounded-r-lg border-b border-gray-200 dark:border-gray-600">Disponibilidad</th>
         </tr>
       </thead>
       <tbody>
-        {services.map((service, index) => (
+        {services.map((service) => (
           <tr 
-            class="border-b border-gray-100 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer" 
+            class="border-b border-gray-100 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer" 
             onclick={`window.location.href='/service/${service.id}'`}
+            tabindex="0"
+            role="link"
+            aria-label={`Reservar servicio de ${service.type} en ${service.location}, precio ${service.price}, disponibilidad ${service.disponibility}`}
+            data-url={`/service/${service.id}`}
+            onkeydown={handleKeyDown}
           >
-            <td class="py-3 px-4 text-gray-800 dark:text-gray-200">{service.type}</td>
-            <td class="py-3 px-4 text-gray-800 dark:text-gray-200">{service.location}</td>
-            <td class="py-3 px-4 text-gray-800 dark:text-gray-200">{service.price}</td>
-            <td class="py-3 px-4 text-gray-800 dark:text-gray-200">{service.disponibility}</td>
+            <td class="py-3 px-4 text-gray-700 dark:text-gray-300 font-medium">{service.type}</td>
+            <td class="py-3 px-4 text-gray-700 dark:text-gray-300">{service.location}</td>
+            <td class="py-3 px-4 text-gray-700 dark:text-gray-300">{service.price}</td>
+            <td class="py-3 px-4">
+              <span 
+                class={`px-2 py-1 rounded-full text-xs font-medium 
+                  ${service.disponibility === "Inmediata" ? "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300" : 
+                    service.disponibility === "Mañana" ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300" : 
+                    "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300"}`}
+              >
+                {service.disponibility}
+              </span>
+            </td>
           </tr>
         ))}
       </tbody>
@@ -55,18 +84,32 @@ const services = [
   </div>
   
   <!-- Vista de tarjetas para móvil -->
-  <div class="sm:hidden space-y-3">
+  <div class="sm:hidden space-y-3" role="list" aria-label="Lista de servicios disponibles">
     {services.map((service) => (
-      <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800 hover:shadow-md cursor-pointer"
-        onclick={`window.location.href='/service/${service.id}'`}>
+      <div 
+        class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800 hover:shadow-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-400"
+        tabindex="0"
+        role="link"
+        aria-label={`Reservar servicio de ${service.type} en ${service.location}, precio ${service.price}, disponibilidad ${service.disponibility}`}
+        onclick={`window.location.href='/service/${service.id}'`}
+        data-url={`/service/${service.id}`}
+        onkeydown={handleKeyDown}
+      >
         <div class="flex justify-between items-start">
           <h3 class="font-medium text-gray-800 dark:text-gray-200">{service.type}</h3>
-          <span class="text-sm font-medium text-green-600 dark:text-green-400">{service.disponibility}</span>
+          <span class="text-sm font-medium text-green-600 dark:text-green-400" aria-label={`Disponibilidad: ${service.disponibility}`}>
+            {service.disponibility}
+          </span>
         </div>
         <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">{service.location}</p>
         <div class="flex justify-between items-center mt-2">
           <span class="font-medium text-gray-800 dark:text-gray-200">{service.price}</span>
-          <button class="text-primary text-sm dark:text-blue-400">
+          <button 
+            class="text-primary text-sm dark:text-blue-400 focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-400 rounded p-1"
+            onclick={`(function(e) { e.stopPropagation(); window.location.href='/booking/${service.id}'; })(event)`}
+            onkeydown={`(function(e) { if (e.key === 'Enter') { e.stopPropagation(); window.location.href='/booking/${service.id}'; } })(event)`}
+            aria-label={`Reservar servicio de ${service.type}`}
+          >
             Reservar
           </button>
         </div>
@@ -75,6 +118,12 @@ const services = [
   </div>
   
   <div class="mt-4 sm:mt-4 text-right">
-    <a href="/services" class="text-primary hover:underline hover:text-primary-dark dark:text-blue-400 dark:hover:text-blue-300">Ver todos los servicios</a>
+    <a 
+      href="/services" 
+      class="text-primary hover:underline hover:text-primary-dark dark:text-blue-400 dark:hover:text-blue-300 focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-400 rounded p-1"
+      aria-label="Ver todos los servicios disponibles"
+    >
+      Ver todos los servicios
+    </a>
   </div>
-</div> 
+</section> 

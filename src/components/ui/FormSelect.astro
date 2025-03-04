@@ -1,0 +1,45 @@
+---
+// Reusable form select component
+interface Props {
+  name: string;
+  id?: string;
+  options: Array<{value: string; label: string; selected?: boolean}>;
+  label?: string;
+  required?: boolean;
+  disabled?: boolean;
+  class?: string;
+}
+
+const {
+  name,
+  id = name,
+  options,
+  label,
+  required = false,
+  disabled = false,
+  class: className = '',
+} = Astro.props;
+
+const baseClasses = "w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:border-transparent transition-colors duration-200";
+---
+
+<div class="w-full">
+  {label && (
+    <label for={id} class="block text-sm font-medium mb-1">
+      {label}
+      {required && <span class="text-red-500 ml-1">*</span>}
+    </label>
+  )}
+  
+  <select
+    id={id}
+    name={name}
+    required={required}
+    disabled={disabled}
+    class={`${baseClasses} ${className}`}
+  >
+    {options.map(option => (
+      <option value={option.value} selected={option.selected}>{option.label}</option>
+    ))}
+  </select>
+</div> 

@@ -1,0 +1,127 @@
+---
+import AppLayout from '../layouts/AppLayout.astro';
+import { getQueuers, getQueuerCities, getAllQueuerServices } from '../lib/supabase';
+import QueuerFilters from '../components/QueuerFilters.astro';
+import QueuerCard from '../components/QueuerCard.astro';
+import '../styles/animations.css';
+
+// Define types for our data
+interface Queuer {
+  id: string;
+  name: string;
+  avatar_url: string | null;
+  rating: number | null;
+  completed_queues: number | null;
+  city: string | null;
+  rate_per_hour: number | null;
+  speciality: string | null;
+  is_verified: boolean;
+  description?: string;
+}
+
+interface Service {
+  id: string;
+  name: string;
+  description: string | null;
+}
+
+// Fetch search parameters on the server
+const { searchParams } = Astro.url;
+const search = searchParams.get('q') || '';
+const city = searchParams.get('city') || '';
+const service = searchParams.get('service') || '';
+const sortBy = searchParams.get('sort') || 'rating';
+
+// Configure filters
+const filters = {
+  active: true,
+  search: search || undefined,
+  city: city || undefined,
+  service: service || undefined,
+  sortBy: sortBy
+};
+
+// Data initialization
+let queuers: Queuer[] = [];
+let cities: string[] = [];
+let services: Service[] = [];
+let error: string | null = null;
+
+try {
+  // Parallel fetch for better performance
+  const [citiesResult, servicesResult, queuersResult] = await Promise.all([
+    getQueuerCities(),
+    getAllQueuerServices(),
+    getQueuers(filters)
+  ]);
+  
+  // Process results
+  cities = citiesResult.data || [];
+  services = servicesResult.data || [];
+  
+  if (queuersResult.error) {
+    throw queuersResult.error;
+  }
+  queuers = queuersResult.data || [];
+} catch (err) {
+  console.error("Error fetching data:", err);
+  error = "Error al cargar los datos. Por favor, intenta de nuevo más tarde.";
+}
+
+// Current filter state to pass to components
+const currentFilters = {
+  search,
+  city,
+  service,
+  sortBy
+};
+---
+
+<AppLayout title="Representantes disponibles - QueueMaster">
+  <div class="container mx-auto px-4 py-8">
+    {/* Error display */}
+    {error && (
+      <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 animate-fade-in" role="alert">
+        <p>{error}</p>
+      </div>
+    )}
+
+    {/* Filters component */}
+    <QueuerFilters 
+      cities={cities} 
+      services={services} 
+      currentFilters={currentFilters} 
+    />
+    
+    {/* Main content */}
+    <div class="w-full">
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">Representantes disponibles</h1>
+        <span class="text-sm text-gray-600 dark:text-gray-400">
+          {queuers.length} {queuers.length === 1 ? 'representante' : 'representantes'} encontrados
+        </span>
+      </div>
+      
+      {/* Results display */}
+      {queuers.length === 0 ? (
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow text-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p class="text-lg text-gray-600 dark:text-gray-400 mb-3">
+            No se encontraron representantes con los filtros seleccionados.
+          </p>
+          <a href="/queuers" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition-colors duration-200">
+            Ver todos los representantes
+          </a>
+        </div>
+      ) : (
+        <div class="grid grid-cols-1 gap-6 animate-fade-in">
+          {queuers.map((queuer) => (
+            <QueuerCard queuer={queuer} />
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+</AppLayout> 

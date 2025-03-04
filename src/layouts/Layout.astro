@@ -1,11 +1,40 @@
+---
+export interface Props {
+	title: string;
+}
+
+import { getSession } from '../lib/auth';
+import '../styles/animations.css';
+
+const { title } = Astro.props;
+
+// Verificar si el usuario está autenticado
+const { data: sessionData } = await getSession();
+const session = sessionData?.session;
+const isAuthenticated = !!session;
+
+// Definir la interfaz para los recursos críticos
+interface CriticalResource {
+	href: string;
+	as: string;
+	crossorigin?: string;
+}
+
+// Recursos críticos que queremos precargar
+const criticalResources: CriticalResource[] = [
+	{ href: '/logo.svg', as: 'image' },
+	{ href: '/fonts/inter-var.woff2', as: 'font', crossorigin: 'anonymous' }
+];
+---
+
 <!doctype html>
 <html lang="es" class="light">
 	<head>
 		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
-		<title>QueueMaster - No hagas más filas</title>
+		<title>{title}</title>
 		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 		<script is:inline>
 			// Script para manejar el cambio de tema
@@ -29,40 +58,132 @@
 			
 			window.localStorage.setItem('theme', theme);
 		</script>
-	</head>
-	<body class="bg-[#EEF2F8] dark:bg-gray-900 transition-colors duration-200">
-		<!-- Botón selector de tema -->
-		<button 
-			id="theme-toggle" 
-			class="fixed top-4 right-4 z-50 p-2 rounded-full bg-white dark:bg-gray-800 shadow-md text-gray-800 dark:text-gray-200"
-			aria-label="Cambiar tema"
-		>
-			<!-- Icono de sol para modo oscuro (se muestra cuando está en modo oscuro) -->
-			<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-			</svg>
-			<!-- Icono de luna para modo claro (se muestra cuando está en modo claro) -->
-			<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-			</svg>
-		</button>
 		
+		<!-- Precargar recursos críticos -->
+		{criticalResources.map((resource: CriticalResource) => (
+			<link 
+				rel="preload" 
+				href={resource.href} 
+				as={resource.as} 
+				{...(resource.crossorigin && { crossorigin: resource.crossorigin })}
+			/>
+		))}
+		
+		<!-- Establecer políticas de caché para la página -->
+		<meta http-equiv="Cache-Control" content="max-age=300" />
+		
+		<!-- DNS Prefetch para dominios de terceros -->
+		<link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+		<link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+		
+		<!-- Agregar información para SEO -->
+		<meta name="description" content="QueueMaster - La aplicación para gestionar tus filas de espera y representantes de forma eficiente" />
+		<meta name="keywords" content="cola, fila, gestión, representantes, citas, reservas" />
+		
+		<!-- Soporte para PWA -->
+		<link rel="manifest" href="/manifest.json" />
+		<meta name="theme-color" content="#4338ca" />
+	</head>
+	<body class="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+		<!-- Contenido principal -->
+		<slot />
+		
+		<!-- Script para detección de modo oscuro para mejorar CLS -->
 		<script is:inline>
-			// Adjuntar el evento al botón después de que se cargue la página
-			document.addEventListener('DOMContentLoaded', () => {
-				const themeToggle = document.getElementById('theme-toggle');
-				if (themeToggle) {
-					themeToggle.addEventListener('click', () => {
-						const isDark = document.documentElement.classList.contains('dark');
-						document.documentElement.classList.toggle('dark', !isDark);
-						document.documentElement.classList.toggle('light', isDark);
-						localStorage.setItem('theme', isDark ? 'light' : 'dark');
-					});
+			// Verifica si debemos usar modo oscuro
+			const userPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+			const storedTheme = localStorage.getItem('theme') || 'auto';
+			
+			// Aplicar tema oscuro inmediatamente si es necesario (evita destello en modo claro)
+			if (storedTheme === 'dark' || (storedTheme === 'auto' && userPrefersDark)) {
+				document.documentElement.classList.add('dark');
+			}
+		</script>
+		
+		<!-- Unificado los scripts en uno solo para mejorar el rendimiento -->
+		<script is:inline>
+			document.addEventListener('DOMContentLoaded', function() {
+				// Inicialización del tema
+				setupThemeToggle();
+				
+				// Inicialización del menú de usuario
+				setupUserMenu();
+				
+				// Inicialización del botón de logout
+				setupLogoutButton();
+				
+				// Funciones de utilidad
+				function setupThemeToggle() {
+					const themeToggle = document.getElementById('theme-toggle');
+					if (themeToggle) {
+						themeToggle.addEventListener('click', () => {
+							const isDark = document.documentElement.classList.contains('dark');
+							document.documentElement.classList.toggle('dark', !isDark);
+							document.documentElement.classList.toggle('light', isDark);
+							localStorage.setItem('theme', isDark ? 'light' : 'dark');
+						});
+					}
+				}
+				
+				function setupUserMenu() {
+					const userMenuButton = document.getElementById('user-menu-button');
+					const userMenu = document.getElementById('user-menu');
+					
+					if (userMenuButton && userMenu) {
+						userMenuButton.addEventListener('click', function() {
+							userMenu.classList.toggle('hidden');
+						});
+						
+						// Cerrar al hacer clic fuera
+						document.addEventListener('click', function(event) {
+							if (!userMenuButton.contains(event.target) && !userMenu.contains(event.target)) {
+								userMenu.classList.add('hidden');
+							}
+						});
+					}
+				}
+				
+				function setupLogoutButton() {
+					const logoutButton = document.getElementById('logout-button');
+					if (logoutButton) {
+						logoutButton.addEventListener('click', async function() {
+							try {
+								const response = await fetch('/api/logout', {
+									method: 'POST',
+									headers: {
+										'Content-Type': 'application/json'
+									}
+								});
+								
+								if (response.ok) {
+									window.location.href = '/';
+								} else {
+									console.error('Error al cerrar sesión');
+								}
+							} catch (error) {
+								console.error('Error al cerrar sesión:', error);
+							}
+						});
+					}
 				}
 			});
 		</script>
 		
-		<slot />
+		<!-- Registro del Service Worker para soporte de PWA -->
+		<script is:inline>
+			// Registrar el service worker solo en producción y si está soportado
+			if ('serviceWorker' in navigator && import.meta.env.PROD) {
+				window.addEventListener('load', function() {
+					navigator.serviceWorker.register('/sw.js')
+						.then(function(registration) {
+							console.log('Service Worker registrado con éxito:', registration.scope);
+						})
+						.catch(function(error) {
+							console.log('Error al registrar el Service Worker:', error);
+						});
+				});
+			}
+		</script>
 	</body>
 </html>
 

@@ -1,0 +1,5 @@
+/* 
+Este es un marcador para la imagen fallback.png.
+Este archivo debería ser reemplazado por una imagen PNG real.
+La imagen fallback se mostrará cuando una imagen no pueda cargarse en modo offline.
+*/ 

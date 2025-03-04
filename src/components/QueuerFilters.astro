@@ -1,0 +1,100 @@
+---
+// Component for filter form in queuers page
+import FormInput from './ui/FormInput.astro';
+import FormSelect from './ui/FormSelect.astro';
+import Button from './ui/Button.astro';
+
+interface Props {
+  cities: string[];
+  services: { id: string; name: string; description: string | null }[];
+  currentFilters: {
+    search: string;
+    city: string;
+    service: string;
+    sortBy: string;
+  };
+}
+
+const { cities, services, currentFilters } = Astro.props;
+const { search, city, service, sortBy } = currentFilters;
+
+// Prepare select options
+const cityOptions = [
+  { value: '', label: 'Todas las ciudades' },
+  ...cities.map(cityName => ({
+    value: cityName,
+    label: cityName,
+    selected: city === cityName
+  }))
+];
+
+const serviceOptions = [
+  { value: '', label: 'Todos los servicios' },
+  ...services.map(serviceItem => ({
+    value: serviceItem.id,
+    label: serviceItem.name,
+    selected: service === serviceItem.id
+  }))
+];
+
+const sortOptions = [
+  { value: 'rating', label: 'Calificación', selected: sortBy === 'rating' },
+  { value: 'completed', label: 'Queues completados', selected: sortBy === 'completed' },
+  { value: 'price_low', label: 'Precio: menor a mayor', selected: sortBy === 'price_low' },
+  { value: 'price_high', label: 'Precio: mayor a menor', selected: sortBy === 'price_high' },
+  { value: 'name', label: 'Nombre', selected: sortBy === 'name' }
+];
+---
+
+<div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-6 transition-all duration-300 hover:shadow-md">
+  <h2 class="text-lg font-semibold mb-4">Filtros</h2>
+  
+  <form id="filter-form" action="/queuers" method="get" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+    <FormInput
+      type="search"
+      name="q"
+      id="search"
+      value={search}
+      placeholder="Nombre o especialidad..."
+      label="Buscar"
+    />
+    
+    <FormSelect
+      name="city"
+      id="city"
+      options={cityOptions}
+      label="Ciudad"
+    />
+    
+    <FormSelect
+      name="service"
+      id="service"
+      options={serviceOptions}
+      label="Servicio"
+    />
+    
+    <FormSelect
+      name="sort"
+      id="sort"
+      options={sortOptions}
+      label="Ordenar por"
+    />
+    
+    <div class="sm:col-span-2 md:col-span-4 flex justify-end">
+      <Button type="submit" id="apply-filters">
+        Aplicar filtros
+      </Button>
+    </div>
+  </form>
+</div>
+
+<script>
+  import { enhanceFormWithAutoSubmit } from '../scripts/utils.js';
+  
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('filter-form');
+    
+    // Uncomment to enable auto-submit on select change
+    // enhanceFormWithAutoSubmit(form, { elements: 'select', delay: 300 });
+  });
+</script> 

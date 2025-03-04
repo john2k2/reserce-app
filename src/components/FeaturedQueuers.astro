@@ -1,9 +1,12 @@
 ---
+// Import the Button component
+import Button from './ui/Button.astro';
+
 const queuers = [
   {
     id: "Q001",
     name: "Carlos Mendoza",
-    avatar: "/avatars/carlos.jpg",
+    avatar: "/avatars/profile1.jpg",
     rating: 4.8,
     speciality: "Conciertos, Eventos deportivos",
     completedQueues: 126,
@@ -12,7 +15,7 @@ const queuers = [
   {
     id: "Q002",
     name: "María González",
-    avatar: "/avatars/maria.jpg",
+    avatar: "/avatars/profile2.jpg",
     rating: 4.9,
     speciality: "Bancos, Trámites oficiales",
     completedQueues: 84,
@@ -21,7 +24,7 @@ const queuers = [
   {
     id: "Q003",
     name: "Juan Pérez",
-    avatar: "/avatars/juan.jpg",
+    avatar: "/avatars/profile3.jpg",
     rating: 4.7,
     speciality: "Trámites, Servicios públicos",
     completedQueues: 153,
@@ -30,7 +33,7 @@ const queuers = [
   {
     id: "Q004",
     name: "Ana Martínez",
-    avatar: "/avatars/ana.jpg",
+    avatar: "/avatars/profile4.jpg",
     rating: 4.9,
     speciality: "Conciertos, Eventos culturales",
     completedQueues: 92,
@@ -39,52 +42,71 @@ const queuers = [
 ];
 ---
 
-<div class="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 shadow-sm">
+<section class="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 shadow-sm transition-all duration-300 hover:shadow-md" aria-labelledby="featured-queuers-heading">
   <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6">
-    <h2 class="text-xl font-semibold dark:text-gray-100 mb-2 sm:mb-0">Representantes destacados</h2>
-    <div class="flex">
-      <button class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 mr-2">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <h2 id="featured-queuers-heading" class="text-xl font-semibold dark:text-gray-100 mb-2 sm:mb-0">Representantes destacados</h2>
+    <div class="flex" role="navigation" aria-label="Navegación de representantes destacados">
+      <button 
+        class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 mr-2 focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-400 transition-colors duration-200" 
+        aria-label="Ver representantes anteriores"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <polyline points="15 18 9 12 15 6"></polyline>
         </svg>
       </button>
-      <button class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <button 
+        class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-400 transition-colors duration-200" 
+        aria-label="Ver representantes siguientes"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <polyline points="9 18 15 12 9 6"></polyline>
         </svg>
       </button>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in" role="list">
     {queuers.map((queuer) => (
-      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer">
+      <div 
+        class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-all duration-300 cursor-pointer"
+        role="listitem"
+      >
         <div class="flex flex-col items-center">
-          <div class="w-20 h-20 rounded-full bg-gray-300 dark:bg-gray-700 mb-3 overflow-hidden">
-            <img src={queuer.avatar} alt={queuer.name} onerror="this.src='/avatars/default.jpg'" class="w-full h-full object-cover" />
+          <div class="w-20 h-20 rounded-full bg-gray-300 dark:bg-gray-700 mb-3 overflow-hidden hover-scale">
+            <img 
+              src={queuer.avatar} 
+              alt={`Foto de perfil de ${queuer.name}`} 
+              onerror="this.src='/avatars/default.jpg'" 
+              class="w-full h-full object-cover" 
+              loading="lazy"
+              width="80"
+              height="80"
+            />
           </div>
           
           <h3 class="font-semibold text-lg dark:text-gray-100">{queuer.name}</h3>
           
-          <div class="flex items-center mt-1 text-yellow-500">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-            </svg>
+          <div class="flex items-center mt-1" aria-label={`Valoración: ${queuer.rating} de 5 estrellas`}>
+            <span class="text-yellow-500" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+            </span>
             <span class="ml-1 text-gray-800 dark:text-gray-200">{queuer.rating}</span>
           </div>
           
           <p class="text-xs text-gray-600 dark:text-gray-300 mt-2 text-center">{queuer.speciality}</p>
           
           <div class="mt-3 flex justify-between w-full text-xs text-gray-600 dark:text-gray-300">
-            <span class="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">
+            <span class="flex items-center" aria-label={`${queuer.completedQueues} servicios completados`}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1" aria-hidden="true">
                 <circle cx="12" cy="8" r="7"></circle>
                 <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
               </svg>
               {queuer.completedQueues}
             </span>
-            <span class="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">
+            <span class="flex items-center" aria-label={`Ciudad: ${queuer.city}`}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1" aria-hidden="true">
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                 <circle cx="12" cy="10" r="3"></circle>
               </svg>
@@ -92,19 +114,30 @@ const queuers = [
             </span>
           </div>
           
-          <a href={`/queuer/${queuer.id}`} class="mt-4 w-full py-2 bg-primary text-white rounded-lg hover:bg-blue-600 text-sm text-center">Ver perfil</a>
+          <Button
+            href={`/queuer/${queuer.id}`}
+            variant="primary"
+            class="mt-4 w-full py-2 text-sm flex items-center justify-center"
+          >
+            <span>Ver perfil</span>
+          </Button>
         </div>
       </div>
     ))}
   </div>
   
   <div class="mt-4 sm:mt-6 text-center">
-    <a href="/queuers" class="inline-flex items-center text-primary hover:underline dark:text-blue-400 dark:hover:text-blue-300">
+    <Button
+      href="/queuers"
+      variant="link"
+      class="inline-flex items-center"
+      aria-label="Ver todos los representantes disponibles"
+    >
       Ver todos los representantes
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-1">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-1" aria-hidden="true">
         <line x1="5" y1="12" x2="19" y2="12"></line>
         <polyline points="12 5 19 12 12 19"></polyline>
       </svg>
-    </a>
+    </Button>
   </div>
-</div> 
+</section> 

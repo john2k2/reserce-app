@@ -1,0 +1,85 @@
+---
+// Component for user navigation UI (both logged-in and logged-out states)
+import Button from './ui/Button.astro';
+
+interface Props {
+  session: any | null;
+  userName?: string;
+  userAvatar?: string;
+  isMobile?: boolean;
+}
+
+const { session, userName = "Usuario", userAvatar = "/avatars/default.jpg", isMobile = false } = Astro.props;
+
+// Menu items for user dropdown
+const menuItems = [
+  { text: 'Mi perfil', href: '/profile', icon: 'user' },
+  { text: 'Configuración', href: '/settings', icon: 'cog' },
+  { text: 'Cerrar sesión', href: '/logout', icon: 'logout' }
+];
+---
+
+{session ? (
+  <div class="flex items-center relative">
+    {/* Avatar */}
+    <div class={`${isMobile ? 'w-9 h-9' : 'w-9 h-9 mr-2'} rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 hover-scale`}>
+      <img 
+        src={userAvatar} 
+        alt={`Foto de perfil de ${userName}`} 
+        class="w-full h-full object-cover"
+        loading="lazy"
+        width="36"
+        height="36"
+        onerror="this.src='/avatars/default.jpg'; this.onerror=null;"
+      />
+    </div>
+    
+    {/* User info - only show on desktop */}
+    {!isMobile && (
+      <div>
+        <p class="text-sm font-medium text-gray-700 dark:text-gray-200">{userName}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400">Mi cuenta</p>
+      </div>
+    )}
+    
+    {/* Dropdown indicator - only show on desktop */}
+    {!isMobile && (
+      <button 
+        class="ml-2 p-1 text-gray-400 dark:text-gray-300 hover:text-gray-600 dark:hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-400 rounded transition-colors duration-200" 
+        aria-expanded="false" 
+        aria-haspopup="true" 
+        aria-label="Abrir menú de usuario"
+        id="user-menu-button"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+        </svg>
+      </button>
+    )}
+  </div>
+) : (
+  /* If not logged in */
+  <div class="flex items-center space-x-2">
+    {/* Los botones ahora están en la barra lateral */}
+  </div>
+)}
+
+<script>
+  import { createDropdownMenu } from '../scripts/utils.js';
+  
+  document.addEventListener('DOMContentLoaded', () => {
+    const menuButton = document.getElementById('user-menu-button');
+    
+    if (menuButton) {
+      // Menu items data
+      const menuItems = [
+        { text: 'Mi perfil', href: '/profile', icon: 'user' },
+        { text: 'Configuración', href: '/settings', icon: 'cog' },
+        { text: 'Cerrar sesión', href: '/logout', icon: 'logout' }
+      ];
+      
+      // Create dropdown with our utility function
+      createDropdownMenu(menuButton, menuItems);
+    }
+  });
+</script> 

@@ -1,0 +1,508 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { supabase, getReservationById, updateReservationStatus } from '../../lib/supabase';
+import type { ReservationStatus } from '../../types/database.types';
+
+// Obtener ID de la reserva
+const { id } = Astro.params;
+
+// Verificar si el usuario está autenticado
+const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+// Redireccionar si no hay sesión
+if (!session) {
+  return Astro.redirect(`/login?redirect=/reservation/${id}`);
+}
+
+// Obtener datos de la reserva
+let reservation = null;
+let error = null;
+let isClient = false;
+let isQueuer = false;
+let isAdmin = false;
+
+try {
+  // Obtener reserva
+  const { data: reservationData, error: reservationError } = await getReservationById(id as string);
+  
+  if (reservationError) {
+    console.error('Error al obtener reserva:', reservationError);
+    error = 'No se pudo cargar la reserva. Por favor, intenta de nuevo más tarde.';
+  } else if (!reservationData) {
+    error = 'Reserva no encontrada.';
+  } else {
+    reservation = reservationData;
+    
+    // Obtener perfil del usuario actual
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('id, user_type, is_admin')
+      .eq('user_id', session.user.id)
+      .single();
+    
+    if (profileData) {
+      // Determinar el rol del usuario en relación a esta reserva
+      isClient = profileData.id === reservation.client_id;
+      isQueuer = profileData.id === reservation.queuer_id;
+      isAdmin = profileData.is_admin;
+      
+      // Verificar permisos de acceso
+      if (!isClient && !isQueuer && !isAdmin) {
+        return Astro.redirect('/dashboard?error=No+tienes+permiso+para+ver+esta+reserva');
+      }
+    }
+  }
+} catch (e) {
+  console.error('Error al procesar la solicitud:', e);
+  error = 'Ha ocurrido un error al cargar los datos. Por favor, intenta de nuevo más tarde.';
+}
+
+// Formato de la fecha
+function formatDate(dateString: string | null | undefined): string {
+  if (!dateString) return 'Fecha no especificada';
+  const options: Intl.DateTimeFormatOptions = { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric', 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  };
+  return new Date(dateString).toLocaleDateString('es-ES', options);
+}
+
+// Información del estado
+function getStatusInfo(status: ReservationStatus | string | null | undefined) {
+  switch (status) {
+    case 'pending':
+      return { color: 'yellow', text: 'Pendiente', icon: 'clock' };
+    case 'confirmed':
+      return { color: 'blue', text: 'Confirmada', icon: 'check-circle' };
+    case 'in_progress':
+      return { color: 'green', text: 'En progreso', icon: 'refresh' };
+    case 'completed':
+      return { color: 'green', text: 'Completada', icon: 'check-double' };
+    case 'cancelled':
+      return { color: 'red', text: 'Cancelada', icon: 'x-circle' };
+    default:
+      return { color: 'gray', text: status || 'Desconocido', icon: 'question' };
+  }
+}
+
+// Determinar las transiciones de estado posibles
+function getPossibleTransitions(currentStatus: ReservationStatus | string, userIsClient: boolean) {
+  const transitions = [];
+  
+  switch (currentStatus) {
+    case 'pending':
+      transitions.push({ value: 'cancelled', text: 'Cancelar reserva' });
+      if (!userIsClient) {
+        transitions.push({ value: 'confirmed', text: 'Confirmar reserva' });
+      }
+      break;
+    case 'confirmed':
+      transitions.push({ value: 'cancelled', text: 'Cancelar reserva' });
+      if (!userIsClient) {
+        transitions.push({ value: 'in_progress', text: 'Marcar en progreso' });
+      }
+      break;
+    case 'in_progress':
+      transitions.push({ value: 'cancelled', text: 'Cancelar reserva' });
+      if (!userIsClient) {
+        transitions.push({ value: 'completed', text: 'Marcar como completada' });
+      }
+      break;
+  }
+  
+  return transitions;
+}
+---
+
+<Layout title={reservation ? `Reserva: ${reservation.services?.name || 'Servicio'} - QueueMaster` : 'Detalle de Reserva - QueueMaster'}>
+  <div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+      <!-- Botón de volver -->
+      <a 
+        href="/dashboard" 
+        class="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 mb-6"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        Volver al tablero
+      </a>
+      
+      {error ? (
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-red-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-2">{error}</h2>
+          <p class="text-gray-600 dark:text-gray-400 mb-6">No pudimos encontrar la información de la reserva solicitada.</p>
+          <a 
+            href="/dashboard" 
+            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+          >
+            Volver al tablero
+          </a>
+        </div>
+      ) : (
+        <div>
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+            <!-- Cabecera con estado de la reserva -->
+            <div class={`px-6 py-4 bg-${getStatusInfo(reservation?.status).color}-100 dark:bg-${getStatusInfo(reservation?.status).color}-900/30 border-b border-${getStatusInfo(reservation?.status).color}-200 dark:border-${getStatusInfo(reservation?.status).color}-900/50`}>
+              <div class="flex justify-between items-center">
+                <h1 class="text-xl font-semibold text-gray-900 dark:text-white">
+                  {reservation?.services?.name || 'Servicio'}
+                </h1>
+                <div class={`px-3 py-1 rounded-full bg-${getStatusInfo(reservation?.status).color}-200 dark:bg-${getStatusInfo(reservation?.status).color}-900/50 text-${getStatusInfo(reservation?.status).color}-800 dark:text-${getStatusInfo(reservation?.status).color}-200 text-sm font-medium flex items-center`}>
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{getStatusInfo(reservation?.status).text}</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Detalles de la reserva -->
+            <div class="p-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Información principal -->
+                <div>
+                  <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Detalles de la Reserva</h2>
+                  
+                  <dl class="space-y-3">
+                    <div class="flex items-start">
+                      <dt class="w-28 flex-shrink-0 text-sm font-medium text-gray-500 dark:text-gray-400">Servicio:</dt>
+                      <dd class="text-gray-900 dark:text-white">{reservation?.services?.name || 'No especificado'}</dd>
+                    </div>
+                    
+                    <div class="flex items-start">
+                      <dt class="w-28 flex-shrink-0 text-sm font-medium text-gray-500 dark:text-gray-400">Fecha:</dt>
+                      <dd class="text-gray-900 dark:text-white">{formatDate(reservation?.date)}</dd>
+                    </div>
+                    
+                    <div class="flex items-start">
+                      <dt class="w-28 flex-shrink-0 text-sm font-medium text-gray-500 dark:text-gray-400">Ubicación:</dt>
+                      <dd class="text-gray-900 dark:text-white">{reservation?.location || 'No especificada'}</dd>
+                    </div>
+                    
+                    <div class="flex items-start">
+                      <dt class="w-28 flex-shrink-0 text-sm font-medium text-gray-500 dark:text-gray-400">Detalles:</dt>
+                      <dd class="text-gray-900 dark:text-white whitespace-pre-line">{reservation?.details || 'Sin detalles adicionales'}</dd>
+                    </div>
+                    
+                    {reservation?.created_at && (
+                      <div class="flex items-start">
+                        <dt class="w-28 flex-shrink-0 text-sm font-medium text-gray-500 dark:text-gray-400">Creada:</dt>
+                        <dd class="text-gray-900 dark:text-white">{formatDate(reservation.created_at)}</dd>
+                      </div>
+                    )}
+                    
+                    {reservation?.status === 'completed' && reservation.client_rating && (
+                      <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-2">Valoración del Cliente</h3>
+                        
+                        <div class="flex items-center mb-2">
+                          <div class="flex">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <svg 
+                                xmlns="http://www.w3.org/2000/svg" 
+                                width="16" 
+                                height="16" 
+                                viewBox="0 0 24 24" 
+                                fill={(reservation.client_rating >= star) ? "currentColor" : "none"} 
+                                stroke="currentColor"
+                                stroke-width="1.5"
+                                class={`${(reservation.client_rating >= star) ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-600'}`}
+                              >
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                              </svg>
+                            ))}
+                          </div>
+                          <span class="ml-2 text-gray-900 dark:text-white">{reservation.client_rating} de 5</span>
+                        </div>
+                        
+                        {reservation.client_review && (
+                          <div class="bg-gray-50 dark:bg-gray-700/30 p-3 rounded-md text-gray-800 dark:text-gray-200 text-sm">
+                            "{reservation.client_review}"
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </dl>
+                </div>
+                
+                <!-- Información de las partes -->
+                <div>
+                  <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Participantes</h2>
+                  
+                  <div class="space-y-6">
+                    <!-- Cliente -->
+                    <div class="bg-gray-50 dark:bg-gray-700/30 rounded-md p-4">
+                      <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Cliente</h3>
+                      <div class="flex items-center">
+                        <div class="flex-shrink-0 h-10 w-10 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
+                          <img 
+                            class="h-full w-full object-cover" 
+                            src={reservation?.['profiles!reservations_client_id_fkey']?.avatar_url || "/avatars/default.jpg"} 
+                            alt="Foto de perfil del cliente" 
+                            onerror="this.src='/avatars/default.jpg'; this.onerror=null;"
+                          />
+                        </div>
+                        <div class="ml-3">
+                          <p class="text-sm font-medium text-gray-900 dark:text-white">
+                            {reservation?.['profiles!reservations_client_id_fkey']?.name || 'Cliente no especificado'}
+                          </p>
+                          {isQueuer && reservation?.client_id && (
+                            <a 
+                              href={`/chat/${reservation.client_id}`} 
+                              class="text-xs text-primary hover:text-primary-dark dark:text-blue-400 dark:hover:text-blue-300"
+                            >
+                              Enviar mensaje
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- Representante -->
+                    <div class="bg-gray-50 dark:bg-gray-700/30 rounded-md p-4">
+                      <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Representante</h3>
+                      <div class="flex items-center">
+                        <div class="flex-shrink-0 h-10 w-10 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
+                          <img 
+                            class="h-full w-full object-cover" 
+                            src={reservation?.['profiles!reservations_queuer_id_fkey']?.avatar_url || "/avatars/default.jpg"} 
+                            alt="Foto de perfil del representante" 
+                            onerror="this.src='/avatars/default.jpg'; this.onerror=null;"
+                          />
+                        </div>
+                        <div class="ml-3">
+                          <div class="flex items-center">
+                            <p class="text-sm font-medium text-gray-900 dark:text-white">
+                              {reservation?.['profiles!reservations_queuer_id_fkey']?.name || 'Representante no especificado'}
+                            </p>
+                            {reservation?.['profiles!reservations_queuer_id_fkey']?.rating && (
+                              <div class="flex items-center ml-2">
+                                <svg class="h-4 w-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                </svg>
+                                <span class="ml-1 text-sm text-gray-500 dark:text-gray-400">{reservation['profiles!reservations_queuer_id_fkey'].rating}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div class="flex mt-1">
+                            {isClient && reservation?.queuer_id && (
+                              <a 
+                                href={`/chat/${reservation.queuer_id}`} 
+                                class="text-xs text-primary hover:text-primary-dark dark:text-blue-400 dark:hover:text-blue-300 mr-3"
+                              >
+                                Enviar mensaje
+                              </a>
+                            )}
+                            {reservation?.queuer_id && (
+                              <a 
+                                href={`/queuer/${reservation.queuer_id}`} 
+                                class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                              >
+                                Ver perfil
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Acciones disponibles -->
+            {(isClient || isQueuer || isAdmin) && reservation && (
+              <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700/30 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                  {(reservation.status === 'completed' || reservation.status === 'cancelled') ? (
+                    <span class="text-sm text-gray-500 dark:text-gray-400">
+                      Esta reserva está {reservation.status === 'completed' ? 'completada' : 'cancelada'} y no se puede modificar.
+                    </span>
+                  ) : (
+                    <div class="flex flex-wrap items-center gap-3">
+                      {getPossibleTransitions(reservation.status, isClient).length > 0 ? (
+                        <>
+                          <span class="text-sm text-gray-700 dark:text-gray-300">Cambiar estado:</span>
+                          {getPossibleTransitions(reservation.status, isClient).map((transition) => (
+                            <button 
+                              class={`px-3 py-1 rounded-md text-sm font-medium ${transition.value === 'cancelled' ? 'bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-200 dark:hover:bg-red-900/50' : 'bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-200 dark:hover:bg-blue-900/50'}`}
+                              data-reservation-id={reservation.id}
+                              data-action="change-status"
+                              data-status={transition.value}
+                            >
+                              {transition.text}
+                            </button>
+                          ))}
+                        </>
+                      ) : (
+                        <span class="text-sm text-gray-500 dark:text-gray-400">
+                          No hay acciones disponibles en este momento.
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  
+                  {reservation.status === 'completed' && isClient && !reservation.client_rating && (
+                    <a 
+                      href={`/rate/${reservation.id}`} 
+                      class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                      </svg>
+                      Valorar servicio
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <!-- Historial de estado -->
+          <div class="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Historial de la Reserva</h2>
+            
+            <div class="relative">
+              <!-- Línea vertical -->
+              <div class="absolute left-4 top-1 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700"></div>
+              
+              <div class="space-y-8 relative pl-12">
+                {/* Historial mockup - en la implementación real, esto vendría de la base de datos */}
+                <div>
+                  <div class="absolute left-0 top-0 w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                  </div>
+                  <div class="text-sm">
+                    <p class="font-medium text-gray-900 dark:text-white mb-1">Reserva creada</p>
+                    <p class="text-gray-500 dark:text-gray-400">{reservation?.created_at ? formatDate(reservation.created_at) : '-'}</p>
+                  </div>
+                </div>
+                
+                {reservation?.status !== 'pending' && (
+                  <div>
+                    <div class="absolute left-0 top-0 w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-800">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <div class="text-sm">
+                      <p class="font-medium text-gray-900 dark:text-white mb-1">Reserva confirmada</p>
+                      <p class="text-gray-500 dark:text-gray-400">{reservation?.updated_at ? formatDate(reservation.updated_at) : '-'}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {(reservation?.status === 'in_progress' || reservation?.status === 'completed') && (
+                  <div>
+                    <div class="absolute left-0 top-0 w-8 h-8 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-800">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                    </div>
+                    <div class="text-sm">
+                      <p class="font-medium text-gray-900 dark:text-white mb-1">Servicio en progreso</p>
+                      <p class="text-gray-500 dark:text-gray-400">{reservation?.updated_at ? formatDate(reservation.updated_at) : '-'}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {reservation?.status === 'completed' && (
+                  <div>
+                    <div class="absolute left-0 top-0 w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-800">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div class="text-sm">
+                      <p class="font-medium text-gray-900 dark:text-white mb-1">Servicio completado</p>
+                      <p class="text-gray-500 dark:text-gray-400">{reservation?.updated_at ? formatDate(reservation.updated_at) : '-'}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {reservation?.status === 'cancelled' && (
+                  <div>
+                    <div class="absolute left-0 top-0 w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-800">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </div>
+                    <div class="text-sm">
+                      <p class="font-medium text-gray-900 dark:text-white mb-1">Reserva cancelada</p>
+                      <p class="text-gray-500 dark:text-gray-400">{reservation?.updated_at ? formatDate(reservation.updated_at) : '-'}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+</Layout>
+
+<script>
+  // Función para cambiar el estado de una reserva
+  async function changeReservationStatus(reservationId: string, newStatus: string) {
+    if (!reservationId || !newStatus) return;
+    
+    let confirmMessage = '¿Estás seguro que deseas cambiar el estado de esta reserva?';
+    
+    if (newStatus === 'cancelled') {
+      confirmMessage = '¿Estás seguro que deseas cancelar esta reserva? Esta acción no se puede deshacer.';
+    } else if (newStatus === 'completed') {
+      confirmMessage = '¿Confirmas que el servicio ha sido completado satisfactoriamente?';
+    }
+    
+    const confirmed = confirm(confirmMessage);
+    if (!confirmed) return;
+    
+    try {
+      const response = await fetch(`/api/reservations?id=${reservationId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: newStatus
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        alert('Estado de la reserva actualizado correctamente');
+        // Recargar la página para ver los cambios
+        window.location.reload();
+      } else {
+        alert(`Error al actualizar el estado: ${data.message || 'Se produjo un error inesperado'}`);
+      }
+    } catch (error) {
+      console.error('Error al actualizar el estado:', error);
+      alert('Se produjo un error al actualizar el estado. Por favor, intenta de nuevo más tarde.');
+    }
+  }
+  
+  // Agregar event listeners para los botones de cambio de estado
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('[data-action="change-status"]').forEach(button => {
+      button.addEventListener('click', function(this: HTMLElement) {
+        const reservationId = this.getAttribute('data-reservation-id');
+        const newStatus = this.getAttribute('data-status');
+        if (reservationId && newStatus) {
+          changeReservationStatus(reservationId, newStatus);
+        }
+      });
+    });
+  });
+</script> 

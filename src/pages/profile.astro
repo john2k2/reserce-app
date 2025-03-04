@@ -1,0 +1,343 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getSession, getProfileByUserId } from '../lib/supabase';
+import type { Profile } from '../types/database.types';
+
+// Verificar si el usuario está autenticado
+const { data: sessionData, error: sessionError } = await getSession();
+const session = sessionData?.session;
+
+// Redireccionar si no hay sesión
+if (!session) {
+  return Astro.redirect('/login?redirect=/profile');
+}
+
+// Obtener perfil del usuario
+let profile: Profile | null = null;
+let error: string | null = null;
+
+try {
+  // Obtener perfil
+  const { data: userData, error: userError } = await getProfileByUserId(session.user.id);
+  
+  if (userError) {
+    console.error('Error al obtener perfil:', userError);
+    error = 'No se pudo cargar tu perfil. Por favor, intenta de nuevo más tarde.';
+  } else if (userData) {
+    profile = userData;
+  } else {
+    // Si el usuario está autenticado pero no tiene perfil, redireccionar para crear perfil
+    return Astro.redirect('/create-profile');
+  }
+} catch (e) {
+  console.error('Error al procesar la solicitud:', e);
+  error = 'Ha ocurrido un error al cargar los datos. Por favor, intenta de nuevo más tarde.';
+}
+---
+
+<Layout title="Mi Perfil - QueueMaster">
+  <div class="container mx-auto px-4 py-8">
+    {error ? (
+      <div class="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-4 mb-8">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm text-red-700 dark:text-red-200">{error}</p>
+          </div>
+        </div>
+      </div>
+    ) : (
+      <div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Mi Perfil</h1>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Actualiza tu información personal y preferencias</p>
+          </div>
+          
+          <div class="p-6">
+            <form id="profile-form" class="space-y-6">
+              <input type="hidden" id="profile-id" name="id" value={profile?.id} />
+              
+              <!-- Sección de Foto de Perfil -->
+              <div class="flex flex-col md:flex-row items-center gap-6 pb-6 border-b border-gray-200 dark:border-gray-700">
+                <div class="w-32 h-32 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0">
+                  <img 
+                    id="preview-avatar" 
+                    src={profile?.avatar_url || "/avatars/default.jpg"} 
+                    alt="Foto de perfil" 
+                    class="w-full h-full object-cover"
+                    onerror="this.src='/avatars/default.jpg'; this.onerror=null;"
+                  />
+                </div>
+                
+                <div class="flex flex-col gap-3">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Cambiar foto de perfil
+                  </label>
+                  <input 
+                    type="file" 
+                    id="avatar-upload" 
+                    name="avatar" 
+                    accept="image/*"
+                    class="block w-full text-sm text-gray-500 dark:text-gray-400
+                           file:mr-4 file:py-2 file:px-4
+                           file:rounded-md file:border-0
+                           file:text-sm file:font-medium
+                           file:bg-primary file:text-white
+                           hover:file:bg-primary-dark"
+                  />
+                  <p class="text-xs text-gray-500 dark:text-gray-400">PNG, JPG o GIF. Máximo 2MB.</p>
+                </div>
+              </div>
+              
+              <!-- Información personal -->
+              <div class="space-y-4">
+                <h2 class="text-lg font-medium text-gray-900 dark:text-white">Información personal</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div class="space-y-2">
+                    <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nombre completo</label>
+                    <input
+                      type="text"
+                      id="name"
+                      name="name"
+                      value={profile?.name || ''}
+                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+                      required
+                    />
+                  </div>
+                  
+                  <div class="space-y-2">
+                    <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Correo electrónico</label>
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      value={profile?.email || ''}
+                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white bg-gray-100 dark:bg-gray-600"
+                      disabled
+                    />
+                    <p class="text-xs text-gray-500 dark:text-gray-400">El correo electrónico no se puede cambiar.</p>
+                  </div>
+                  
+                  <div class="space-y-2">
+                    <label for="city" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Ciudad</label>
+                    <input
+                      type="text"
+                      id="city"
+                      name="city"
+                      value={profile?.city || ''}
+                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+                    />
+                  </div>
+                  
+                  <div class="space-y-2">
+                    <label for="phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Teléfono</label>
+                    <input
+                      type="tel"
+                      id="phone"
+                      name="phone"
+                      value={profile?.phone || ''}
+                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+                    />
+                  </div>
+                </div>
+                
+                {profile?.user_type === 'queuer' && (
+                  <div class="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <h2 class="text-lg font-medium text-gray-900 dark:text-white">Información profesional</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div class="space-y-2">
+                        <label for="speciality" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Especialidad</label>
+                        <select
+                          id="speciality"
+                          name="speciality"
+                          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+                          required
+                        >
+                          <option value="" disabled selected={!profile?.speciality}>Selecciona una especialidad</option>
+                          <option value="Trámites bancarios" selected={profile?.speciality === "Trámites bancarios"}>Trámites bancarios</option>
+                          <option value="Trámites gubernamentales" selected={profile?.speciality === "Trámites gubernamentales"}>Trámites gubernamentales</option>
+                          <option value="Conciertos" selected={profile?.speciality === "Conciertos"}>Conciertos</option>
+                          <option value="Eventos deportivos" selected={profile?.speciality === "Eventos deportivos"}>Eventos deportivos</option>
+                          <option value="Servicios públicos" selected={profile?.speciality === "Servicios públicos"}>Servicios públicos</option>
+                          <option value="Otro" selected={profile?.speciality === "Otro"}>Otro</option>
+                        </select>
+                      </div>
+                      
+                      <div class="space-y-2">
+                        <label for="rate_per_hour" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tarifa por hora ($)</label>
+                        <input
+                          type="number"
+                          id="rate_per_hour"
+                          name="rate_per_hour"
+                          value={profile?.rate_per_hour || ''}
+                          min="1"
+                          step="0.01"
+                          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+                          required
+                        />
+                      </div>
+                    </div>
+                    
+                    <div class="space-y-2">
+                      <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Descripción profesional</label>
+                      <textarea
+                        id="description"
+                        name="description"
+                        rows="4"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+                        required
+                      >{profile?.description || ''}</textarea>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <div id="error-message" class="text-red-500 text-sm hidden"></div>
+              <div id="success-message" class="text-green-500 text-sm hidden"></div>
+              
+              <div class="flex justify-end space-x-4">
+                <a 
+                  href="/dashboard" 
+                  class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                >
+                  Cancelar
+                </a>
+                <button
+                  type="submit"
+                  class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                >
+                  Guardar cambios
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+</Layout>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const profileForm = document.getElementById('profile-form') as HTMLFormElement;
+    const errorMessage = document.getElementById('error-message');
+    const successMessage = document.getElementById('success-message');
+    const avatarUpload = document.getElementById('avatar-upload') as HTMLInputElement;
+    const previewAvatar = document.getElementById('preview-avatar') as HTMLImageElement;
+    
+    // Vista previa de la foto de perfil
+    avatarUpload?.addEventListener('change', function(e) {
+      const file = (e.target as HTMLInputElement)?.files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          if (previewAvatar && e.target?.result) {
+            previewAvatar.src = e.target.result as string;
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+    
+    // Envío del formulario
+    profileForm?.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      if (errorMessage) {
+        errorMessage.textContent = '';
+        errorMessage.classList.add('hidden');
+      }
+      
+      if (successMessage) {
+        successMessage.textContent = '';
+        successMessage.classList.add('hidden');
+      }
+      
+      try {
+        // Procesamiento de la imagen si se cambió
+        let avatarUrl = null;
+        if (avatarUpload?.files && avatarUpload.files[0]) {
+          const file = avatarUpload.files[0];
+          
+          // Crear FormData para subir el archivo
+          const formData = new FormData();
+          formData.append('file', file);
+          
+          const uploadResponse = await fetch('/api/upload-avatar', {
+            method: 'POST',
+            body: formData,
+          });
+          
+          if (!uploadResponse.ok) {
+            const uploadError = await uploadResponse.json();
+            throw new Error(uploadError.message || 'Error al subir la imagen');
+          }
+          
+          const uploadData = await uploadResponse.json();
+          avatarUrl = uploadData.url;
+        }
+        
+        // Obtener los datos del formulario
+        const formData = new FormData(profileForm);
+        const profileData: Record<string, any> = {};
+        
+        formData.forEach((value, key) => {
+          if (key === 'rate_per_hour') {
+            profileData[key] = value ? parseFloat(value as string) : null;
+          } else {
+            profileData[key] = value || null;
+          }
+        });
+        
+        // Añadir la URL de la imagen si se subió
+        if (avatarUrl) {
+          profileData.avatar_url = avatarUrl;
+        }
+        
+        // Actualizar el perfil
+        const response = await fetch('/api/update-profile', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(profileData),
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.message || 'Error al actualizar el perfil');
+        }
+        
+        // Mostrar mensaje de éxito
+        if (successMessage) {
+          successMessage.textContent = 'Perfil actualizado correctamente';
+          successMessage.classList.remove('hidden');
+          
+          // Scroll al mensaje
+          successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        
+      } catch (error) {
+        console.error('Error al actualizar el perfil:', error);
+        
+        if (errorMessage) {
+          errorMessage.textContent = error instanceof Error 
+            ? error.message 
+            : 'Ha ocurrido un error al actualizar el perfil. Por favor, inténtalo de nuevo.';
+          errorMessage.classList.remove('hidden');
+          
+          // Scroll al mensaje
+          errorMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    });
+  });
+</script> 

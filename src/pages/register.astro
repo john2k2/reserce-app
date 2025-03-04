@@ -1,0 +1,352 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Registro - QueueMaster">
+  <div class="container mx-auto p-4">
+    <div class="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mt-10">
+      <h1 class="text-2xl font-bold text-center text-gray-800 dark:text-white mb-6">Crear una cuenta</h1>
+      
+      <div class="mb-6">
+        <div class="flex">
+          <button 
+            id="client-tab" 
+            class="flex-1 py-3 px-4 text-center bg-primary text-white rounded-tl-lg"
+            aria-selected="true"
+          >
+            Cliente
+          </button>
+          <button 
+            id="queuer-tab" 
+            class="flex-1 py-3 px-4 text-center bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-tr-lg"
+            aria-selected="false"
+          >
+            Representante
+          </button>
+        </div>
+      </div>
+      
+      <div id="client-form" class="block">
+        <form id="register-client-form" class="space-y-4">
+          <div class="space-y-2">
+            <label for="client-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nombre completo</label>
+            <input
+              type="text"
+              id="client-name"
+              name="name"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+              required
+            />
+          </div>
+          
+          <div class="space-y-2">
+            <label for="client-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Correo electrónico</label>
+            <input
+              type="email"
+              id="client-email"
+              name="email"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+              required
+            />
+          </div>
+          
+          <div class="space-y-2">
+            <label for="client-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Contraseña</label>
+            <input
+              type="password"
+              id="client-password"
+              name="password"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+              required
+              minlength="8"
+            />
+            <p class="text-xs text-gray-500 dark:text-gray-400">La contraseña debe tener al menos 8 caracteres</p>
+          </div>
+          
+          <div class="space-y-2">
+            <label for="client-city" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Ciudad</label>
+            <input
+              type="text"
+              id="client-city"
+              name="city"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          
+          <div class="space-y-2">
+            <label for="client-phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Teléfono (opcional)</label>
+            <input
+              type="tel"
+              id="client-phone"
+              name="phone"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="client-terms"
+              name="terms"
+              class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+              required
+            />
+            <label for="client-terms" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+              Acepto los <a href="/terms" class="text-primary hover:underline">Términos y Condiciones</a>
+            </label>
+          </div>
+          
+          <div class="pt-4">
+            <button
+              type="submit"
+              class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            >
+              Registrarse como Cliente
+            </button>
+          </div>
+        </form>
+      </div>
+      
+      <div id="queuer-form" class="hidden">
+        <form id="register-queuer-form" class="space-y-4">
+          <!-- Datos personales -->
+          <div class="space-y-2">
+            <label for="queuer-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nombre completo</label>
+            <input
+              type="text"
+              id="queuer-name"
+              name="name"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+              required
+            />
+          </div>
+          
+          <div class="space-y-2">
+            <label for="queuer-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Correo electrónico</label>
+            <input
+              type="email"
+              id="queuer-email"
+              name="email"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+              required
+            />
+          </div>
+          
+          <div class="space-y-2">
+            <label for="queuer-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Contraseña</label>
+            <input
+              type="password"
+              id="queuer-password"
+              name="password"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+              required
+              minlength="8"
+            />
+            <p class="text-xs text-gray-500 dark:text-gray-400">La contraseña debe tener al menos 8 caracteres</p>
+          </div>
+          
+          <!-- Información profesional -->
+          <div class="space-y-2">
+            <label for="queuer-speciality" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Especialidad</label>
+            <select
+              id="queuer-speciality"
+              name="speciality"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+              required
+            >
+              <option value="">Selecciona una especialidad</option>
+              <option value="Trámites bancarios">Trámites bancarios</option>
+              <option value="Trámites gubernamentales">Trámites gubernamentales</option>
+              <option value="Conciertos">Conciertos</option>
+              <option value="Eventos deportivos">Eventos deportivos</option>
+              <option value="Servicios públicos">Servicios públicos</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+          
+          <div class="space-y-2">
+            <label for="queuer-city" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Ciudad</label>
+            <input
+              type="text"
+              id="queuer-city"
+              name="city"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+              required
+            />
+          </div>
+          
+          <div class="space-y-2">
+            <label for="queuer-phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Teléfono</label>
+            <input
+              type="tel"
+              id="queuer-phone"
+              name="phone"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+              required
+            />
+          </div>
+          
+          <div class="space-y-2">
+            <label for="queuer-rate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tarifa por hora ($)</label>
+            <input
+              type="number"
+              id="queuer-rate"
+              name="rate_per_hour"
+              min="1"
+              step="0.01"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+              required
+            />
+          </div>
+          
+          <div class="space-y-2">
+            <label for="queuer-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Descripción</label>
+            <textarea
+              id="queuer-description"
+              name="description"
+              rows="3"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+              required
+            ></textarea>
+          </div>
+          
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="queuer-terms"
+              name="terms"
+              class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+              required
+            />
+            <label for="queuer-terms" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+              Acepto los <a href="/terms" class="text-primary hover:underline">Términos y Condiciones</a>
+            </label>
+          </div>
+          
+          <div class="pt-4">
+            <button
+              type="submit"
+              class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            >
+              Registrarse como Representante
+            </button>
+          </div>
+        </form>
+      </div>
+      
+      <div class="mt-6 text-center">
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          ¿Ya tienes una cuenta? <a href="/login" class="text-primary hover:underline">Inicia sesión</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const clientTab = document.getElementById('client-tab');
+    const queuerTab = document.getElementById('queuer-tab');
+    const clientForm = document.getElementById('client-form');
+    const queuerForm = document.getElementById('queuer-form');
+    
+    // Cambiar entre pestañas
+    clientTab?.addEventListener('click', function() {
+      clientTab.classList.remove('bg-gray-200', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+      clientTab.classList.add('bg-primary', 'text-white');
+      clientTab.setAttribute('aria-selected', 'true');
+      
+      queuerTab?.classList.remove('bg-primary', 'text-white');
+      queuerTab?.classList.add('bg-gray-200', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+      queuerTab?.setAttribute('aria-selected', 'false');
+      
+      clientForm?.classList.remove('hidden');
+      clientForm?.classList.add('block');
+      queuerForm?.classList.remove('block');
+      queuerForm?.classList.add('hidden');
+    });
+    
+    queuerTab?.addEventListener('click', function() {
+      queuerTab.classList.remove('bg-gray-200', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+      queuerTab.classList.add('bg-primary', 'text-white');
+      queuerTab.setAttribute('aria-selected', 'true');
+      
+      clientTab?.classList.remove('bg-primary', 'text-white');
+      clientTab?.classList.add('bg-gray-200', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+      clientTab?.setAttribute('aria-selected', 'false');
+      
+      queuerForm?.classList.remove('hidden');
+      queuerForm?.classList.add('block');
+      clientForm?.classList.remove('block');
+      clientForm?.classList.add('hidden');
+    });
+    
+    // Manejar el envío del formulario de cliente
+    const clientFormEl = document.getElementById('register-client-form') as HTMLFormElement;
+    clientFormEl?.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const formData = new FormData(clientFormEl);
+      const userData = Object.fromEntries(formData.entries());
+      
+      try {
+        const response = await fetch('/api/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...userData,
+            user_type: 'client'
+          }),
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          // Redirigir a la página de inicio o dashboard
+          window.location.href = '/dashboard';
+        } else {
+          alert(`Error: ${data.message || 'Ha ocurrido un error durante el registro'}`);
+        }
+      } catch (error) {
+        console.error('Error durante el registro:', error);
+        alert('Ha ocurrido un error durante el registro. Por favor, inténtalo de nuevo.');
+      }
+    });
+    
+    // Manejar el envío del formulario de representante
+    const queuerFormEl = document.getElementById('register-queuer-form') as HTMLFormElement;
+    queuerFormEl?.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const formData = new FormData(queuerFormEl);
+      const userData = Object.fromEntries(formData.entries());
+      
+      try {
+        const response = await fetch('/api/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...userData,
+            user_type: 'queuer'
+          }),
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          // Redirigir a la página de inicio o dashboard
+          window.location.href = '/dashboard';
+        } else {
+          alert(`Error: ${data.message || 'Ha ocurrido un error durante el registro'}`);
+        }
+      } catch (error) {
+        console.error('Error durante el registro:', error);
+        alert('Ha ocurrido un error durante el registro. Por favor, inténtalo de nuevo.');
+      }
+    });
+  });
+</script> 

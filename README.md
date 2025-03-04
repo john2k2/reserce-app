@@ -148,6 +148,52 @@ Este proyecto está bajo la Licencia MIT - mira el archivo [LICENSE](LICENSE) pa
 
 Si tienes preguntas o sugerencias, no dudes en contactarnos en [contacto@queuemaster.com](mailto:contacto@queuemaster.com)
 
+## Optimizaciones de Rendimiento
+
+La aplicación ha sido optimizada para ofrecer el mejor rendimiento y experiencia de usuario:
+
+### Optimización de Imágenes
+
+- **Lazy Loading**: Las imágenes se cargan utilizando el atributo `loading="lazy"` para mejorar los tiempos de carga iniciales y reducir el consumo de datos.
+- **Dimensiones Explícitas**: Todas las imágenes incluyen atributos `width` y `height` para evitar Cumulative Layout Shift (CLS).
+- **Imagen de Fallback**: Se proporciona una imagen de respaldo para situaciones en las que las imágenes no pueden cargarse.
+
+### Carga Diferida de Componentes
+
+- **Componentes Críticos vs No Críticos**: Los componentes críticos para la primera vista se cargan inmediatamente, mientras que los componentes secundarios utilizan carga diferida para optimizar el tiempo de carga.
+- **Dynamic Imports**: Utilizamos importaciones dinámicas para componentes pesados que no son necesarios para la renderización inicial.
+
+### Progressive Web App (PWA)
+
+- **Service Worker**: La aplicación utiliza un Service Worker para mejorar la experiencia offline y la velocidad de carga.
+- **Estrategias de Caché**:
+  - Cache-first para recursos estáticos
+  - Network-first con tiempo límite para datos dinámicos
+- **Capacidades Offline**: Los usuarios pueden navegar por partes de la aplicación incluso sin conexión a internet.
+- **Background Sync**: Las operaciones fallidas se sincronizan automáticamente cuando se restablece la conexión.
+
+### Optimización de Recursos
+
+- **Precargar Recursos Críticos**: Los recursos esenciales se precargan para una experiencia más fluida.
+- **Prefetch de DNS**: Optimización de la carga de recursos de terceros mediante prefetch de DNS.
+- **Compresión Brotli**: Archivos estáticos comprimidos para reducir el tamaño de transferencia.
+- **Minificación**: HTML, CSS y JavaScript minificados para producción.
+
+### Rendimiento de Tiempo de Ejecución
+
+- **Evita CLS**: Implementación de técnicas que evitan el Cumulative Layout Shift, como la detección y aplicación del modo oscuro antes de la renderización.
+- **Chunk Splitting**: División de código por rutas y componentes para optimizar la carga bajo demanda.
+
+## Capacidades Offline y Sincronización
+
+QueueMaster ha sido diseñado con una arquitectura offline-first:
+
+- **Acceso Sin Conexión**: Los usuarios pueden acceder a la aplicación y ver datos previamente cargados sin conexión a internet.
+- **Mensaje de Estado**: Se muestra claramente cuando la aplicación está funcionando en modo offline.
+- **Cola de Operaciones**: Las reservaciones y otras operaciones realizadas sin conexión se almacenan localmente.
+- **Sincronización Automática**: Las operaciones pendientes se sincronizan automáticamente cuando se restablece la conexión.
+- **IndexedDB**: Utilizamos IndexedDB para almacenamiento local eficiente y persistente.
+
 ---
 
 Hecho con ❤️ por el equipo de QueueMaster
