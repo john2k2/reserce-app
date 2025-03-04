@@ -1,7 +1,7 @@
-import { signOut } from '../../lib/supabase';
+import { signOut } from '../../lib/supabase.ts';
 
 // Endpoint para cerrar sesión
-export async function post({ request }) {
+export const POST = async ({ request }) => {
   try {
     const { error } = await signOut();
     

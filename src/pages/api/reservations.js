@@ -1,9 +1,10 @@
 import { supabase } from '../../lib/supabase';
+import { getSession, createReservation } from '../../lib/supabase.ts';
 
 /**
  * Endpoint para crear una nueva reserva
  */
-export async function post({ request }) {
+export const POST = async ({ request }) => {
   try {
     // Verificar autenticación
     const { data: { session }, error: authError } = await supabase.auth.getSession();
@@ -185,9 +186,9 @@ export async function post({ request }) {
 }
 
 /**
- * Endpoint para actualizar el estado de una reserva
+ * Endpoint para actualizar una reserva existente
  */
-export async function patch({ request, params }) {
+export const PATCH = async ({ request, params }) => {
   try {
     const reservationId = new URL(request.url).searchParams.get('id');
     
@@ -481,7 +482,7 @@ function isValidStatusTransition(currentStatus, newStatus, isClient) {
 /**
  * Endpoint para obtener reservas
  */
-export async function get({ request }) {
+export const GET = async ({ request }) => {
   try {
     // Verificar autenticación
     const { data: { session }, error: authError } = await supabase.auth.getSession();

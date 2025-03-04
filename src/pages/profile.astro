@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { getSession, getProfileByUserId } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
+import { getSession, getProfileByUserId } from '../lib/supabase.ts';
 import type { Profile } from '../types/database.types';
 
 // Verificar si el usuario está autenticado

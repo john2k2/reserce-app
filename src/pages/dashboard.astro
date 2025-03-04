@@ -1,10 +1,11 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { supabase, getProfileByUserId, getClientReservations } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
+import { getSession, getProfileByUserId, getClientReservations } from '../lib/supabase.ts';
 import type { Profile, Reservation, ReservationStatus } from '../types/database.types';
 
 // Verificar si el usuario está autenticado
-const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+const { data: sessionData, error: sessionError } = await getSession();
 const session = sessionData?.session;
 
 // Redireccionar si no hay sesión

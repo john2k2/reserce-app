@@ -1,6 +1,7 @@
 ---
 import { getSession } from '../lib/auth';
-import { getProfileByUserId } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
+import { getProfileByUserId } from '../lib/supabase.ts';
 import type { Profile } from '../types/database.types';
 import UserNavigation from './UserNavigation.astro';
 import NotificationBadge from './NotificationBadge.astro';

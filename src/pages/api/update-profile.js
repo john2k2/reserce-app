@@ -1,7 +1,8 @@
-import { getSession, updateProfile } from '../../lib/supabase';
+import { updateProfile } from '../../lib/supabase.ts';
+import { getSession } from '../../lib/supabase.ts';
 
 // Endpoint para actualizar el perfil del usuario
-export async function patch({ request }) {
+export const PATCH = async ({ request }) => {
   try {
     // Verificar si el usuario está autenticado
     const { data: sessionData, error: sessionError } = await getSession();

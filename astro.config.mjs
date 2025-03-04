@@ -4,6 +4,7 @@ import tailwind from '@astrojs/tailwind';
 
 // https://astro.build/config
 export default defineConfig({
+  output: 'server',
   integrations: [tailwind()],
   
   // Configuración de optimización y caché
@@ -12,32 +13,7 @@ export default defineConfig({
     inlineStylesheets: 'auto',
   },
   
-  // Configuración de caché para el servidor
-  server: {
-    headers: {
-      // Configuración de Cache-Control para diferentes tipos de archivos
-      '*.js': {
-        'Cache-Control': 'public, max-age=31536000, immutable'
-      },
-      '*.css': {
-        'Cache-Control': 'public, max-age=31536000, immutable'
-      },
-      '*.svg': {
-        'Cache-Control': 'public, max-age=31536000, immutable'
-      },
-      '*.jpg': {
-        'Cache-Control': 'public, max-age=31536000, immutable'
-      },
-      '*.png': {
-        'Cache-Control': 'public, max-age=31536000, immutable'
-      },
-      '*.woff2': {
-        'Cache-Control': 'public, max-age=31536000, immutable'
-      }
-    }
-  },
-  
-  // Configuración de compresión para reducir el tamaño de transferencia
+  // Vite configuration
   vite: {
     build: {
       // Dividir código en chunks más pequeños

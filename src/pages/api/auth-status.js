@@ -1,7 +1,7 @@
-import { getSession, getProfileByUserId } from '../../lib/supabase';
+import { getSession, getProfileByUserId } from '../../lib/supabase.ts';
 
 // Endpoint para verificar el estado de autenticación del usuario
-export async function get({ request }) {
+export const GET = async ({ request }) => {
   try {
     // Obtener la sesión actual
     const { data: sessionData, error: sessionError } = await getSession();

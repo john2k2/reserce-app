@@ -3,6 +3,7 @@ import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
 import Sidebar from '../../components/Sidebar.astro';
 import { supabase } from '../../lib/supabase';
+import { createReservation, getCurrentUser } from '../../lib/supabase.ts';
 
 // Interfaces para tipado
 interface Reservation {
@@ -400,7 +401,8 @@ const renderStars = (rating: number): string[] => {
 </Layout>
 
 <script>
-  import { supabase, createReservation, getCurrentUser } from '../../lib/supabase';
+  import { supabase } from '../../lib/supabase';
+  import { createReservation, getCurrentUser } from '../../lib/supabase.ts';
   
   document.addEventListener('DOMContentLoaded', function() {
     const reservationForm = document.getElementById('reservation-form') as HTMLFormElement;

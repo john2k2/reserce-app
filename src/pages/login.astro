@@ -111,6 +111,10 @@ import Layout from '../layouts/Layout.astro';
     const loginForm = document.getElementById('login-form') as HTMLFormElement;
     const errorMessage = document.getElementById('error-message');
     
+    // Obtener el parámetro de redirección de la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectUrl = urlParams.get('redirect') || '/dashboard';
+    
     loginForm?.addEventListener('submit', async function(e) {
       e.preventDefault();
       
@@ -142,8 +146,8 @@ import Layout from '../layouts/Layout.astro';
           return;
         }
         
-        // Inicio de sesión exitoso
-        window.location.href = '/dashboard';
+        // Inicio de sesión exitoso - redirigir a la URL especificada o al dashboard por defecto
+        window.location.href = redirectUrl;
       } catch (error) {
         console.error('Error durante el inicio de sesión:', error);
         

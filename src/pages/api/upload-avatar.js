@@ -1,7 +1,8 @@
-import { supabase, getSession } from '../../lib/supabase';
+import { supabase, supabaseAdmin } from '../../lib/supabase';
+import { getSession } from '../../lib/supabase.ts';
 
 // Endpoint para subir imágenes de avatar
-export async function post({ request }) {
+export const POST = async ({ request }) => {
   try {
     // Verificar si el usuario está autenticado
     const { data: sessionData, error: sessionError } = await getSession();
@@ -97,14 +98,63 @@ export async function post({ request }) {
     // Crear un nombre único para el archivo
     const fileExt = file.name.split('.').pop();
     const fileName = `${userId}_${Date.now()}.${fileExt}`;
-    const filePath = `avatars/${fileName}`;
+    const filePath = fileName;
     
     // Convertir el Blob a un ArrayBuffer para subirlo a Supabase Storage
     const arrayBuffer = await file.arrayBuffer();
     
+    // Verificar si el bucket existe y crearlo si no existe
+    const bucketName = 'avatars';
+    const { data: buckets, error: bucketsError } = await supabaseAdmin.storage.listBuckets();
+    
+    if (bucketsError) {
+      console.error('Error al listar buckets:', bucketsError);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: 'Error al verificar el almacenamiento. Por favor, inténtalo de nuevo.',
+        }),
+        {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+    }
+    
+    // Verificar si el bucket 'avatars' existe
+    const bucketExists = buckets.some(bucket => bucket.name === bucketName);
+    
+    // Si el bucket no existe, intentar crearlo
+    if (!bucketExists) {
+      console.log('El bucket "avatars" no existe. Intentando crearlo...');
+      const { error: createBucketError } = await supabaseAdmin.storage.createBucket(bucketName, {
+        public: true // Hacer el bucket público para que las imágenes sean accesibles
+      });
+      
+      if (createBucketError) {
+        console.error('Error al crear el bucket:', createBucketError);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: 'Error al crear el almacenamiento para avatares. Por favor, contacta al administrador.',
+          }),
+          {
+            status: 500,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+      
+      console.log('Bucket "avatars" creado exitosamente');
+    }
+    
     // Subir el archivo a Supabase Storage
-    const { data, error } = await supabase.storage
-      .from('avatars')
+    const { data, error } = await supabaseAdmin.storage
+      .from(bucketName)
       .upload(filePath, arrayBuffer, {
         contentType: file.type,
         upsert: true,
@@ -112,6 +162,22 @@ export async function post({ request }) {
     
     if (error) {
       console.error('Error al subir el avatar:', error);
+      
+      // Mensaje específico si el bucket no existe
+      if (error.message === 'Bucket not found' || error.error === 'Bucket not found') {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: 'El almacenamiento para avatares no está configurado. Por favor, contacta al administrador para crear el bucket "avatars" en Supabase.',
+          }),
+          {
+            status: 500,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
       
       return new Response(
         JSON.stringify({
@@ -128,8 +194,8 @@ export async function post({ request }) {
     }
     
     // Obtener la URL pública del archivo
-    const { data: urlData } = supabase.storage
-      .from('avatars')
+    const { data: urlData } = supabaseAdmin.storage
+      .from(bucketName)
       .getPublicUrl(filePath);
     
     // Subida exitosa

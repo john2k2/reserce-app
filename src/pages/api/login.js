@@ -1,8 +1,9 @@
-import { signIn } from '../../lib/supabase';
+import { signIn } from '../../lib/supabase.ts';
 
 // Endpoint para manejar el inicio de sesión
-export async function post({ request }) {
+export const POST = async ({ request }) => {
   try {
+    console.log('Procesando solicitud de inicio de sesión...');
     const body = await request.json();
 
     // Validar los campos requeridos
@@ -69,7 +70,7 @@ export async function post({ request }) {
     );
     
   } catch (error) {
-    console.error('Error en el endpoint de inicio de sesión:', error);
+    console.error('Error en el endpoint de login:', error);
     
     return new Response(
       JSON.stringify({
