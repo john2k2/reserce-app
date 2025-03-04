@@ -1,0 +1,38 @@
+---
+const rooms = [
+  { sala: "Sala 5", piso: "2", franja: "Mañana", oficina: "Medellín" },
+  { sala: "Sala 1", piso: "1", franja: "Todo el día", oficina: "Bogotá" },
+  { sala: "Sala 5", piso: "3", franja: "Tarde", oficina: "Medellín" }
+];
+---
+
+<div class="bg-white rounded-lg p-6 shadow-sm">
+  <h2 class="text-xl font-semibold mb-4">Salas disponibles ahora</h2>
+  
+  <div class="overflow-x-auto">
+    <table class="w-full">
+      <thead>
+        <tr class="bg-[#F5F7FF]">
+          <th class="py-3 px-4 text-left text-sm font-medium text-gray-700 rounded-l-lg">Sala</th>
+          <th class="py-3 px-4 text-left text-sm font-medium text-gray-700">Piso</th>
+          <th class="py-3 px-4 text-left text-sm font-medium text-gray-700">Franja</th>
+          <th class="py-3 px-4 text-left text-sm font-medium text-gray-700 rounded-r-lg">Oficina</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rooms.map((room, index) => (
+          <tr class="border-b border-gray-100 last:border-0">
+            <td class="py-3 px-4">{room.sala}</td>
+            <td class="py-3 px-4">{room.piso}</td>
+            <td class="py-3 px-4">{room.franja}</td>
+            <td class="py-3 px-4">{room.oficina}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+  
+  <div class="mt-4 text-right">
+    <a href="#" class="text-primary hover:underline">Ver todas las salas</a>
+  </div>
+</div>

@@ -1,0 +1,60 @@
+---
+const reservation = {
+  location: "Sala 5 - piso 2",
+  capacity: "8 personas",
+  time: "9:30 am - 10:00 am",
+  office: "Bogotá D.C",
+  timeSlot: "Mañana"
+};
+---
+
+<div class="bg-white rounded-lg p-6 border-l-4 border-[#32CD32] shadow-sm">
+  <div class="flex items-center mb-4">
+    <div class="bg-[#EEFBEE] p-2 rounded-lg mr-3">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#32CD32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+        <circle cx="12" cy="10" r="3"></circle>
+      </svg>
+    </div>
+    <h2 class="text-xl font-semibold">Tienes una reserva hoy</h2>
+  </div>
+
+  <div class="grid grid-cols-2 gap-6 mb-4">
+    <div>
+      <p class="text-gray-600 mb-1">Donde:</p>
+      <p class="font-medium">{reservation.location}</p>
+    </div>
+    <div>
+      <p class="text-gray-600 mb-1">Oficina:</p>
+      <p class="font-medium">{reservation.office}</p>
+    </div>
+    <div>
+      <p class="text-gray-600 mb-1">Capacidad:</p>
+      <p class="font-medium">{reservation.capacity}</p>
+    </div>
+    <div>
+      <p class="text-gray-600 mb-1">Franja:</p>
+      <p class="font-medium">{reservation.timeSlot}</p>
+    </div>
+    <div class="col-span-2">
+      <p class="text-gray-600 mb-1">Hora:</p>
+      <p class="font-medium">{reservation.time}</p>
+    </div>
+  </div>
+
+  <div class="flex items-center">
+    <a href="#" class="text-primary flex items-center">
+      Re-programar aquí
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-1">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+    </a>
+  </div>
+
+  <div class="flex justify-between mt-6">
+    <button class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Cancelar</button>
+    <button class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-600">Confirmar</button>
+  </div>
+</div>

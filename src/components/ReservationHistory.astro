@@ -1,0 +1,108 @@
+---
+// Lista de reservas pasadas
+const historyItems = [
+  {
+    id: "R-12345",
+    event: "Concierto Bad Bunny",
+    queuer: "Carlos Mendoza",
+    date: "15/06/2023",
+    status: "Completada",
+    rating: 5
+  },
+  {
+    id: "R-12346",
+    event: "Partido Colombia vs Brasil",
+    queuer: "Ana Martínez",
+    date: "02/06/2023",
+    status: "Completada",
+    rating: 4
+  },
+  {
+    id: "R-12347",
+    event: "Trámite Pasaporte",
+    queuer: "Roberto Gómez",
+    date: "20/05/2023",
+    status: "Cancelada",
+    rating: null
+  },
+  {
+    id: "R-12348",
+    event: "Festival Estéreo Picnic",
+    queuer: "Diana Torres",
+    date: "10/04/2023",
+    status: "Completada",
+    rating: 5
+  },
+  {
+    id: "R-12349",
+    event: "Evento Apple Store",
+    queuer: "Julián Castro",
+    date: "28/03/2023",
+    status: "Completada",
+    rating: 3
+  }
+];
+---
+
+<div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+  <h2 class="text-xl font-semibold mb-4 dark:text-gray-100">Historial de Reservas</h2>
+  
+  <div class="overflow-x-auto">
+    <table class="w-full">
+      <thead>
+        <tr class="bg-[#F5F7FF] dark:bg-gray-700">
+          <th class="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-200 rounded-l-lg">ID</th>
+          <th class="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Evento</th>
+          <th class="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Representante</th>
+          <th class="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Fecha</th>
+          <th class="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Estado</th>
+          <th class="py-3 px-4 text-left text-sm font-medium text-gray-700 dark:text-gray-200 rounded-r-lg">Valoración</th>
+        </tr>
+      </thead>
+      <tbody>
+        {historyItems.map(item => (
+          <tr class="border-b border-gray-100 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700">
+            <td class="py-3 px-4 text-gray-700 dark:text-gray-300">
+              <a href={`/tracking/${item.id}`} class="hover:text-primary hover:underline">
+                {item.id}
+              </a>
+            </td>
+            <td class="py-3 px-4 text-gray-700 dark:text-gray-300">{item.event}</td>
+            <td class="py-3 px-4">
+              <a href={`/queuer/Q00${parseInt(item.id.substring(2, 6)) % 4 + 1}`} class="text-primary hover:underline dark:text-blue-400 dark:hover:text-blue-300">
+                {item.queuer}
+              </a>
+            </td>
+            <td class="py-3 px-4 text-gray-700 dark:text-gray-300">{item.date}</td>
+            <td class="py-3 px-4">
+              <span class={`px-2 py-1 rounded-full text-xs font-medium 
+                ${item.status === "Completada" ? "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300" : 
+                  item.status === "Cancelada" ? "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300" : 
+                  "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300"}`}>
+                {item.status}
+              </span>
+            </td>
+            <td class="py-3 px-4">
+              {item.rating ? (
+                <div class="flex items-center">
+                  <span class="text-gray-700 dark:text-gray-300 mr-1">{item.rating}</span>
+                  <span class="text-yellow-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                    </svg>
+                  </span>
+                </div>
+              ) : (
+                <span class="text-gray-400 dark:text-gray-500">N/A</span>
+              )}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+  
+  <div class="mt-4 text-right">
+    <a href="/history" class="text-primary hover:underline text-sm dark:text-blue-400 dark:hover:text-blue-300">Ver historial completo →</a>
+  </div>
+</div>

@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="es" class="light">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="generator" content={Astro.generator} />
+		<title>QueueMaster - No hagas más filas</title>
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+		<script is:inline>
+			// Script para manejar el cambio de tema
+			const theme = (() => {
+				if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
+					return localStorage.getItem('theme') || 'light';
+				}
+				if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+					return 'dark';
+				}
+				return 'light';
+			})();
+			
+			if (theme === 'dark') {
+				document.documentElement.classList.remove('light');
+				document.documentElement.classList.add('dark');
+			} else {
+				document.documentElement.classList.remove('dark');
+				document.documentElement.classList.add('light');
+			}
+			
+			window.localStorage.setItem('theme', theme);
+		</script>
+	</head>
+	<body class="bg-[#EEF2F8] dark:bg-gray-900 transition-colors duration-200">
+		<!-- Botón selector de tema -->
+		<button 
+			id="theme-toggle" 
+			class="fixed top-4 right-4 z-50 p-2 rounded-full bg-white dark:bg-gray-800 shadow-md text-gray-800 dark:text-gray-200"
+			aria-label="Cambiar tema"
+		>
+			<!-- Icono de sol para modo oscuro (se muestra cuando está en modo oscuro) -->
+			<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+			</svg>
+			<!-- Icono de luna para modo claro (se muestra cuando está en modo claro) -->
+			<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+			</svg>
+		</button>
+		
+		<script is:inline>
+			// Adjuntar el evento al botón después de que se cargue la página
+			document.addEventListener('DOMContentLoaded', () => {
+				const themeToggle = document.getElementById('theme-toggle');
+				if (themeToggle) {
+					themeToggle.addEventListener('click', () => {
+						const isDark = document.documentElement.classList.contains('dark');
+						document.documentElement.classList.toggle('dark', !isDark);
+						document.documentElement.classList.toggle('light', isDark);
+						localStorage.setItem('theme', isDark ? 'light' : 'dark');
+					});
+				}
+			});
+		</script>
+		
+		<slot />
+	</body>
+</html>
+
+<style is:global>
+	:root {
+		--color-primary: #4F46E5;
+		--color-primary-dark: #4338CA;
+	}
+	
+	:root.dark {
+		--color-primary: #818CF8;
+		--color-primary-dark: #6366F1;
+		--dark-bg-primary: #1F2937;
+		--dark-bg-secondary: #111827;
+		--dark-text-primary: #F9FAFB;
+		--dark-text-secondary: #D1D5DB;
+		--dark-border: #374151;
+	}
+	
+	html,
+	body {
+		margin: 0;
+		width: 100%;
+		height: 100%;
+		font-family: 'Inter', sans-serif;
+	}
+	
+	.dark .bg-gray-800 {
+		background-color: var(--dark-bg-primary);
+	}
+	
+	.dark .bg-gray-900 {
+		background-color: var(--dark-bg-secondary);
+	}
+	
+	.dark .text-gray-200 {
+		color: var(--dark-text-primary);
+	}
+	
+	.dark .text-gray-300,
+	.dark .text-gray-400 {
+		color: var(--dark-text-secondary);
+	}
+	
+	.dark .text-gray-600,
+	.dark .text-gray-700,
+	.dark .text-gray-800 {
+		color: var(--dark-text-secondary);
+	}
+	
+	.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+		color: var(--dark-text-primary);
+	}
+	
+	.dark .border-gray-700 {
+		border-color: var(--dark-border);
+	}
+	
+	.bg-primary {
+		background-color: var(--color-primary);
+	}
+	
+	.bg-primary-dark {
+		background-color: var(--color-primary-dark);
+	}
+	
+	.text-primary {
+		color: var(--color-primary);
+	}
+	
+	.hover\:bg-primary-dark:hover {
+		background-color: var(--color-primary-dark);
+	}
+	
+	.hover\:bg-blue-600:hover {
+		background-color: #2563EB;
+	}
+	
+	/* Transiciones suaves para cambios de tema */
+	.transition-colors {
+		transition-property: background-color, border-color, color, fill, stroke;
+		transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+	}
+	
+	.duration-200 {
+		transition-duration: 200ms;
+	}
+</style>

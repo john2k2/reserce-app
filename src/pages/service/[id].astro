@@ -1,0 +1,308 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Sidebar from '../../components/Sidebar.astro';
+
+// Función requerida para rutas dinámicas en Astro
+export function getStaticPaths() {
+  return [
+    { params: { id: 'S001' } },
+    { params: { id: 'S002' } },
+    { params: { id: 'S003' } },
+  ];
+}
+
+// Obtenemos el ID del servicio de los parámetros de la URL
+const serviceId = Astro.params.id;
+
+// Base de datos de servicios (en una implementación real, estos datos vendrían de una API)
+const servicesDatabase = {
+  "S001": {
+    id: "S001",
+    type: "Concierto",
+    name: "Concierto de Bad Bunny",
+    location: "Movistar Arena",
+    date: "15 de agosto, 2023",
+    time: "20:00",
+    price: "$25.000",
+    description: "Servicio de representante para hacer fila en el ingreso al concierto de Bad Bunny. Nuestro representante llegará 4 horas antes del evento para asegurar una buena posición en la fila.",
+    image: "/images/concert.jpg",
+    address: "Av. Circunvalar 1, Bogotá",
+    additionalInfo: "El representante solo hace la fila para el ingreso, no permanece durante el evento.",
+    estimatedWaitingTime: "4-5 horas"
+  },
+  "S002": {
+    id: "S002",
+    type: "Banco",
+    name: "Trámite Bancolombia",
+    location: "Bancolombia Centro",
+    date: "Disponible todos los días",
+    time: "8:00 - 16:00",
+    price: "$15.000",
+    description: "Servicio de representante para realizar filas en el banco Bancolombia. Ideal para trámites que requieren presencia física pero no necesariamente la del titular.",
+    image: "/images/bank.jpg",
+    address: "Calle 53 #10-60, Bogotá",
+    additionalInfo: "Se requiere información previa sobre el trámite a realizar. Documentos deben ser proporcionados por el cliente.",
+    estimatedWaitingTime: "2-3 horas"
+  },
+  "S003": {
+    id: "S003",
+    type: "Trámite",
+    name: "Trámite Registro Civil",
+    location: "Registro Civil",
+    date: "Lunes a viernes",
+    time: "9:00 - 17:00",
+    price: "$20.000",
+    description: "Servicio de representante para realizar filas en el Registro Civil. Ideal para trámites de documentos y certificados que no requieren presencia del titular.",
+    image: "/images/government.jpg",
+    address: "Calle 26 #51-50, Bogotá",
+    additionalInfo: "Se requiere información detallada sobre el trámite y documentos necesarios. No todos los trámites pueden ser realizados por un representante.",
+    estimatedWaitingTime: "3-4 horas"
+  }
+};
+
+// Obtenemos el servicio específico según el ID
+// Usamos una comprobación de tipo para asegurar que serviceId es una clave válida
+const service = serviceId && typeof serviceId === 'string' && serviceId in servicesDatabase 
+  ? servicesDatabase[serviceId as keyof typeof servicesDatabase] 
+  : servicesDatabase["S001"]; // Fallback al primer servicio si no se encuentra
+
+// Representantes disponibles para este servicio (en una implementación real, se filtrarían según el tipo de servicio)
+const availableQueuers = [
+  {
+    id: "Q001",
+    name: "Carlos Mendoza",
+    avatar: "/avatars/carlos.jpg",
+    rating: 4.8,
+    price: "$25.000",
+    waitingTime: "4 horas",
+    experience: "2 años",
+    completedServices: 126
+  },
+  {
+    id: "Q002",
+    name: "María González",
+    avatar: "/avatars/maria.jpg",
+    rating: 4.9,
+    price: "$28.000",
+    waitingTime: "5 horas",
+    experience: "3 años",
+    completedServices: 84
+  },
+  {
+    id: "Q003",
+    name: "Juan Pérez",
+    avatar: "/avatars/juan.jpg",
+    rating: 4.7,
+    price: "$22.000",
+    waitingTime: "3 horas",
+    experience: "1 año",
+    completedServices: 153
+  }
+];
+---
+
+<Layout>
+  <div class="container mx-auto p-4 dark:text-gray-200">
+    <Header />
+    
+    <div class="grid grid-cols-12 gap-6">
+      <div class="col-span-3">
+        <Sidebar />
+      </div>
+      
+      <div class="col-span-9">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden mb-6">
+          <!-- Imagen de cabecera -->
+          <div class="h-48 bg-gray-300 dark:bg-gray-700 relative flex items-center justify-center">
+            <img 
+              src={service.image} 
+              alt={service.name} 
+              class="w-full h-full object-cover"
+              onerror="this.src='/images/default-service.jpg'; this.onerror=null;"
+            />
+            <div class="absolute inset-0 bg-black bg-opacity-40"></div>
+            <div class="absolute bottom-4 left-4 text-white">
+              <h1 class="text-2xl font-bold">{service.name}</h1>
+              <p class="text-sm">{service.location}</p>
+            </div>
+            <a href="/" class="absolute top-4 left-4 bg-white dark:bg-gray-800 bg-opacity-80 dark:bg-opacity-80 p-2 rounded-full">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+              </svg>
+            </a>
+          </div>
+          
+          <!-- Detalles del servicio -->
+          <div class="p-6">
+            <div class="flex justify-between items-start mb-6">
+              <div>
+                <div class="flex items-center mb-2">
+                  <span class="bg-primary text-white text-xs font-semibold px-3 py-1 rounded-full mr-2">
+                    {service.type}
+                  </span>
+                  <span class="text-gray-600 dark:text-gray-400 text-sm">
+                    ID: {service.id}
+                  </span>
+                </div>
+                <h2 class="text-xl font-semibold mb-2">{service.name}</h2>
+                <p class="text-gray-700 dark:text-gray-300 mb-4">{service.description}</p>
+              </div>
+              <div class="text-right">
+                <p class="text-2xl font-bold text-primary">
+                  {service.price}
+                </p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">por representante</p>
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-6 mb-6">
+              <div>
+                <h3 class="font-semibold mb-3">Detalles del evento</h3>
+                <div class="space-y-2">
+                  <div class="flex items-start">
+                    <span class="text-primary mr-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                      </svg>
+                    </span>
+                    <div>
+                      <p class="font-medium">Fecha</p>
+                      <p class="text-gray-600 dark:text-gray-400 text-sm">{service.date}</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start">
+                    <span class="text-primary mr-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                      </svg>
+                    </span>
+                    <div>
+                      <p class="font-medium">Hora</p>
+                      <p class="text-gray-600 dark:text-gray-400 text-sm">{service.time}</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start">
+                    <span class="text-primary mr-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                      </svg>
+                    </span>
+                    <div>
+                      <p class="font-medium">Ubicación</p>
+                      <p class="text-gray-600 dark:text-gray-400 text-sm">{service.address}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <h3 class="font-semibold mb-3">Información adicional</h3>
+                <div class="space-y-2">
+                  <div class="flex items-start">
+                    <span class="text-primary mr-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                      </svg>
+                    </span>
+                    <div>
+                      <p class="font-medium">Información del servicio</p>
+                      <p class="text-gray-600 dark:text-gray-400 text-sm">{service.additionalInfo}</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start">
+                    <span class="text-primary mr-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                      </svg>
+                    </span>
+                    <div>
+                      <p class="font-medium">Tiempo estimado de espera</p>
+                      <p class="text-gray-600 dark:text-gray-400 text-sm">{service.estimatedWaitingTime}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Representantes disponibles -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm mb-6">
+          <h2 class="text-xl font-semibold mb-4">Representantes disponibles</h2>
+          
+          <div class="space-y-4">
+            {availableQueuers.map(queuer => (
+              <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-primary hover:dark:border-primary transition-colors bg-white dark:bg-gray-800">
+                <div class="flex items-start">
+                  <div class="w-16 h-16 rounded-full overflow-hidden mr-4 bg-gray-100 dark:bg-gray-700">
+                    <img 
+                      src={queuer.avatar} 
+                      alt={queuer.name} 
+                      class="w-full h-full object-cover"
+                      onerror="this.src='/avatars/default.jpg'; this.onerror=null;"
+                    />
+                  </div>
+                  
+                  <div class="flex-1">
+                    <div class="flex justify-between">
+                      <div>
+                        <h3 class="font-semibold dark:text-gray-100">{queuer.name}</h3>
+                        <div class="flex items-center text-sm">
+                          <span class="text-yellow-500 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                            </svg>
+                            <span class="ml-1 text-gray-800 dark:text-gray-200">{queuer.rating}</span>
+                          </span>
+                          <span class="mx-2 text-gray-400 dark:text-gray-500">•</span>
+                          <span class="text-gray-600 dark:text-gray-300">{queuer.experience} de experiencia</span>
+                          <span class="mx-2 text-gray-400 dark:text-gray-500">•</span>
+                          <span class="text-gray-600 dark:text-gray-300">{queuer.completedServices} servicios</span>
+                        </div>
+                      </div>
+                      <div class="text-right">
+                        <p class="font-bold text-primary dark:text-primary">{queuer.price}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">{queuer.waitingTime} de espera</p>
+                      </div>
+                    </div>
+                    
+                    <div class="mt-4 flex justify-end">
+                      <a 
+                        href={`/booking/${service.id}?queuer=${queuer.id}`} 
+                        class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors"
+                      >
+                        Seleccionar representante
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        <!-- Términos y condiciones -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
+          <h2 class="text-xl font-semibold mb-4">Términos y condiciones</h2>
+          <div class="text-gray-700 dark:text-gray-300 text-sm space-y-2">
+            <p>• El servicio incluye únicamente la espera en fila por parte del representante hasta el ingreso al evento.</p>
+            <p>• El pago se realiza al reservar. Puedes cancelar hasta 24 horas antes del evento con reembolso del 70%.</p>
+            <p>• El representante se comunicará contigo cuando esté en la ubicación y cuando esté próximo a ingresar.</p>
+            <p>• Debes presentarte al menos 15 minutos antes del ingreso para encontrarte con el representante.</p>
+            <p>• QueueMaster no se hace responsable por cancelaciones o cambios en el evento o servicio.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout> 

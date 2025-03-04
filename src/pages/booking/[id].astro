@@ -1,0 +1,296 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+
+// Función requerida para rutas dinámicas en Astro
+export function getStaticPaths() {
+  return [
+    { params: { id: 'S001' } },
+    { params: { id: 'S002' } },
+    { params: { id: 'S003' } },
+  ];
+}
+
+// En una implementación real, estos datos se obtendrían de una API
+// basado en los parámetros de la URL
+const serviceId = Astro.params.id;
+const queuerId = Astro.url.searchParams.get('queuer') || 'Q001';
+
+// Datos del servicio
+const service = {
+  id: "S001",
+  type: "Concierto",
+  name: "Concierto de Bad Bunny",
+  location: "Movistar Arena",
+  date: "15 de agosto, 2023",
+  time: "20:00",
+  price: "$25.000",
+  image: "/images/concert.jpg",
+};
+
+// Datos del representante
+const queuer = {
+  id: "Q001",
+  name: "Carlos Mendoza",
+  avatar: "/avatars/carlos.jpg",
+  rating: 4.8,
+  price: "$25.000",
+  waitingTime: "4 horas",
+  experience: "2 años"
+};
+
+// Datos de usuario (en un caso real vendrían de la sesión)
+const user = {
+  name: "Alex Rodriguez",
+  email: "alex@example.com",
+  phone: "+57 311 234 5678"
+};
+---
+
+<Layout>
+  <div class="container mx-auto p-4 dark:text-gray-200">
+    <Header />
+    
+    <div class="max-w-4xl mx-auto">
+      <div class="mb-6">
+        <a href={`/service/${serviceId}`} class="flex items-center text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          Volver a detalles del servicio
+        </a>
+      </div>
+      
+      <h1 class="text-2xl font-bold mb-6">Completar reserva</h1>
+      
+      <div class="grid grid-cols-3 gap-6">
+        <!-- Formulario de reserva -->
+        <div class="col-span-2">
+          <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm mb-6">
+            <h2 class="text-xl font-semibold mb-4">Información de contacto</h2>
+            
+            <form>
+              <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre completo</label>
+                  <input 
+                    type="text" 
+                    value={user.name}
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Correo electrónico</label>
+                  <input 
+                    type="email" 
+                    value={user.email}
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono móvil</label>
+                  <input 
+                    type="tel" 
+                    value={user.phone}
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Documento de identidad</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ingresa tu documento"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-white dark:placeholder-gray-400"
+                  />
+                </div>
+              </div>
+              
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Instrucciones especiales para el representante</label>
+                <textarea
+                  placeholder="Añade detalles o instrucciones especiales para tu representante..."
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-white dark:placeholder-gray-400"
+                  rows="3"
+                ></textarea>
+              </div>
+            </form>
+          </div>
+          
+          <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm mb-6">
+            <h2 class="text-xl font-semibold mb-4">Método de pago</h2>
+            
+            <div class="space-y-3">
+              <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 hover:border-primary cursor-pointer">
+                <div class="flex items-center">
+                  <input type="radio" name="payment" id="card" class="mr-3" checked />
+                  <label for="card" class="flex items-center cursor-pointer">
+                    <span class="mr-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                        <line x1="1" y1="10" x2="23" y2="10"></line>
+                      </svg>
+                    </span>
+                    Tarjeta de crédito/débito
+                  </label>
+                </div>
+                
+                <div class="mt-3 pl-7">
+                  <div class="grid grid-cols-2 gap-4 mb-3">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Número de tarjeta</label>
+                      <input 
+                        type="text" 
+                        placeholder="1234 5678 9012 3456"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-white dark:placeholder-gray-400"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre en la tarjeta</label>
+                      <input 
+                        type="text" 
+                        placeholder="ALEX RODRIGUEZ"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-white dark:placeholder-gray-400"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha de expiración</label>
+                      <input 
+                        type="text" 
+                        placeholder="MM/AA"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-white dark:placeholder-gray-400"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Código de seguridad</label>
+                      <input 
+                        type="text" 
+                        placeholder="CVC"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-white dark:placeholder-gray-400"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 hover:border-primary cursor-pointer">
+                <div class="flex items-center">
+                  <input type="radio" name="payment" id="paypal" class="mr-3" />
+                  <label for="paypal" class="flex items-center cursor-pointer">
+                    <span class="mr-2 text-blue-500">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9.5 13.09L7 20M19.51 8.58C19.51 13.62 15.76 16.95 10.83 16.95H8.19L6.3 25.83M17.18 1.75H12.23C10.92 1.75 9.79 2.56 9.4 3.74L5.17 16.63C5.14 16.72 5.12 16.81 5.12 16.91C5.12 17.54 5.69 18.04 6.41 18.04H8.88C10.21 18.04 11.35 17.24 11.74 16.05L13.28 11.2C13.71 9.92 15.18 9.12 16.53 9.12H18.59C19.32 9.12 19.98 8.62 19.98 7.99C19.98 7.9 19.97 7.81 19.94 7.72L19.51 8.58Z" stroke="#4338CA" stroke-width="2"/>
+                      </svg>
+                    </span>
+                    PayPal
+                  </label>
+                </div>
+              </div>
+              
+              <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 hover:border-primary cursor-pointer">
+                <div class="flex items-center">
+                  <input type="radio" name="payment" id="pse" class="mr-3" />
+                  <label for="pse" class="flex items-center cursor-pointer">
+                    <span class="mr-2 text-green-600">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                        <line x1="2" y1="10" x2="22" y2="10"></line>
+                      </svg>
+                    </span>
+                    PSE - Pago en línea
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Resumen de la reserva -->
+        <div class="col-span-1">
+          <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm sticky top-4">
+            <h2 class="text-xl font-semibold mb-4">Resumen de reserva</h2>
+            
+            <div class="flex items-center mb-4 pb-4 border-b border-gray-100 dark:border-gray-700">
+              <div class="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden mr-3">
+                <img 
+                  src={service.image} 
+                  alt={service.name} 
+                  class="w-full h-full object-cover"
+                  onerror="this.src='/images/default-service.jpg'; this.onerror=null;"
+                />
+              </div>
+              <div>
+                <h3 class="font-medium">{service.name}</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">{service.date} - {service.time}</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">{service.location}</p>
+              </div>
+            </div>
+            
+            <div class="mb-4 pb-4 border-b border-gray-100 dark:border-gray-700">
+              <h3 class="font-medium mb-2">Tu representante</h3>
+              
+              <div class="flex items-center">
+                <div class="w-10 h-10 rounded-full overflow-hidden mr-2">
+                  <img 
+                    src={queuer.avatar} 
+                    alt={queuer.name} 
+                    class="w-full h-full object-cover"
+                    onerror="this.src='/avatars/default.jpg'; this.onerror=null;"
+                  />
+                </div>
+                <div>
+                  <p class="font-medium text-sm">{queuer.name}</p>
+                  <div class="flex items-center text-xs">
+                    <span class="text-yellow-500 flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                      </svg>
+                      <span class="ml-1 text-gray-800 dark:text-gray-200">{queuer.rating}</span>
+                    </span>
+                    <span class="mx-1 text-gray-400">•</span>
+                    <span class="text-gray-600 dark:text-gray-400">{queuer.experience}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="mb-4 pb-4 border-b border-gray-100 dark:border-gray-700">
+              <div class="flex justify-between mb-2">
+                <span class="text-gray-600 dark:text-gray-400">Precio del servicio</span>
+                <span>{queuer.price}</span>
+              </div>
+              <div class="flex justify-between mb-2">
+                <span class="text-gray-600 dark:text-gray-400">Tarifa de servicio</span>
+                <span>$5.000</span>
+              </div>
+              <div class="flex justify-between mb-2">
+                <span class="text-gray-600 dark:text-gray-400">Impuestos</span>
+                <span>$3.000</span>
+              </div>
+            </div>
+            
+            <div class="flex justify-between mb-6">
+              <span class="font-semibold">Total a pagar</span>
+              <span class="font-bold text-lg">$33.000</span>
+            </div>
+            
+            <div class="space-y-3">
+              <label class="flex items-center text-sm">
+                <input type="checkbox" class="mr-2" />
+                Acepto los <a href="#" class="text-primary hover:underline ml-1">términos y condiciones</a>
+              </label>
+              
+              <button class="w-full bg-primary text-white py-3 rounded-lg hover:bg-primary-dark transition-colors">
+                Confirmar y pagar
+              </button>
+              
+              <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">
+                Tu pago está protegido con encriptación SSL.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout> 
