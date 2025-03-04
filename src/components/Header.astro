@@ -14,6 +14,7 @@ const isAuthenticated = !!session;
 let profile: Profile | null = null;
 let userName = "Usuario";
 let userAvatar = "/avatars/default.jpg";
+let userType = "client"; // Valor por defecto
 
 // Only fetch profile if there's an active session
 if (session) {
@@ -22,6 +23,7 @@ if (session) {
     profile = userData;
     userName = userData.name || "Usuario";
     userAvatar = userData.avatar_url || "/avatars/default.jpg";
+    userType = userData.user_type || "client"; // Guardar el tipo de usuario
   }
 }
 
@@ -48,7 +50,7 @@ if (isAuthenticated) {
     <!-- Mobile user actions -->
     <div class="flex items-center space-x-2">
       <NotificationBadge type="notification" count={notificationCount} isAuthenticated={isAuthenticated} />
-      <UserNavigation session={session} userName={userName} userAvatar={userAvatar} isMobile={true} />
+      <UserNavigation session={session} userName={userName} userAvatar={userAvatar} userType={userType} isMobile={true} />
     </div>
   </div>
   
@@ -76,6 +78,9 @@ if (isAuthenticated) {
         <NotificationBadge type="notification" count={notificationCount} isAuthenticated={isAuthenticated} />
         <NotificationBadge type="message" count={messageCount} isAuthenticated={isAuthenticated} />
       </>
+    )}
+    {!isAuthenticated && (
+      <UserNavigation session={session} />
     )}
   </div>
 </header>

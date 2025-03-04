@@ -7,9 +7,26 @@ interface Props {
   userName?: string;
   userAvatar?: string;
   isMobile?: boolean;
+  userType?: string;
 }
 
-const { session, userName = "Usuario", userAvatar = "/avatars/default.jpg", isMobile = false } = Astro.props;
+const { 
+  session, 
+  userName = "Usuario", 
+  userAvatar = "/avatars/default.jpg", 
+  isMobile = false,
+  userType = "client" 
+} = Astro.props;
+
+// Función para traducir user_type a un texto amigable
+const getRoleText = (role: string): string => {
+  const roles: Record<string, string> = {
+    'client': 'Cliente',
+    'queuer': 'Representante',
+    'admin': 'Administrador'
+  };
+  return roles[role] || 'Usuario';
+};
 
 // Menu items for user dropdown
 const menuItems = [
@@ -38,7 +55,7 @@ const menuItems = [
     {!isMobile && (
       <div>
         <p class="text-sm font-medium text-gray-700 dark:text-gray-200">{userName}</p>
-        <p class="text-xs text-gray-500 dark:text-gray-400">Mi cuenta</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400">{getRoleText(userType)}</p>
       </div>
     )}
     

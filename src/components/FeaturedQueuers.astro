@@ -1,162 +1,178 @@
 ---
 // Import the Button component
 import Button from './ui/Button.astro';
-import { getSession } from '../lib/supabase.ts';
+import { getSession, getQueuers } from '../lib/supabase.ts';
 
 // Check if user is authenticated
 const { data: sessionData } = await getSession();
 const isAuthenticated = !!sessionData?.session;
 
-// Featured queuers data
-const queuers = [
-  {
-    id: "Q001",
-    name: "Carlos Mendoza",
-    avatar: "/avatars/profile1.jpg",
-    rating: 4.8,
-    speciality: "Conciertos, Eventos deportivos",
-    completedQueues: 126,
-    city: "Bogotá"
-  },
-  {
-    id: "Q002",
-    name: "María González",
-    avatar: "/avatars/profile2.jpg",
-    rating: 4.9,
-    speciality: "Bancos, Trámites oficiales",
-    completedQueues: 84,
-    city: "Medellín"
-  },
-  {
-    id: "Q003",
-    name: "Juan Pérez",
-    avatar: "/avatars/profile3.jpg",
-    rating: 4.7,
-    speciality: "Trámites, Servicios públicos",
-    completedQueues: 153,
-    city: "Cali"
-  },
-  {
-    id: "Q004",
-    name: "Ana Martínez",
-    avatar: "/avatars/profile4.jpg",
-    rating: 4.9,
-    speciality: "Conciertos, Eventos culturales",
-    completedQueues: 92,
-    city: "Barranquilla"
-  }
-];
+// Obtener representantes reales de Supabase (ordenados por rating)
+const { data: allQueuers, error } = await getQueuers({ 
+  active: true,
+  sortBy: 'rating',
+  minRating: 0 // Incluir todos los representantes, incluso sin calificaciones
+});
+
+// Si hay un error, mostrar en consola para depuración
+if (error) {
+  console.error('Error al cargar representantes destacados:', error);
+}
+
+// Filtrar queuers con datos válidos para mostrar
+const validQueuers = allQueuers && allQueuers.length > 0 ? allQueuers : [];
+
+// Datos para mostrar en la página
+const totalQueuers = validQueuers.length;
+const serializedQueuers = JSON.stringify(validQueuers);
+const userIsAuthenticated = isAuthenticated;
 ---
 
-<section class="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 shadow-sm transition-all duration-300 hover:shadow-md" aria-labelledby="featured-queuers-heading">
+<section class="featured-queuers bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 shadow-sm transition-all duration-300 hover:shadow-md" aria-labelledby="featured-queuers-heading">
   <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6">
     <h2 id="featured-queuers-heading" class="text-xl font-semibold dark:text-gray-100 mb-2 sm:mb-0">Representantes destacados</h2>
-    <div class="flex" role="navigation" aria-label="Navegación de representantes destacados">
-      <button 
-        class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 mr-2 focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-400 transition-colors duration-200" 
-        aria-label="Ver representantes anteriores"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <polyline points="15 18 9 12 15 6"></polyline>
-        </svg>
-      </button>
-      <button 
-        class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-400 transition-colors duration-200" 
-        aria-label="Ver representantes siguientes"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <polyline points="9 18 15 12 9 6"></polyline>
-        </svg>
-      </button>
-    </div>
+    
+    <!-- Controles de navegación para el carrusel -->
+    {totalQueuers > 0 && (
+      <div class="flex items-center justify-end" role="navigation" aria-label="Navegación de representantes destacados">
+        <!-- Las flechas se ocultarán en dispositivos táctiles mediante JavaScript -->
+        <button 
+          id="prev-button"
+          class="carousel-nav-btn p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 mr-2 focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-400 transition-colors duration-200 touch-device:hidden" 
+          aria-label="Ver representantes anteriores"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+        <div id="carousel-indicators" class="flex space-x-1 mx-2 items-center">
+          <!-- Los indicadores de página se generarán con JavaScript -->
+        </div>
+        <button 
+          id="next-button"
+          class="carousel-nav-btn p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-400 transition-colors duration-200 touch-device:hidden" 
+          aria-label="Ver representantes siguientes"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
+    )}
   </div>
 
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in" role="list">
-    {queuers.map((queuer) => (
-      <div 
-        class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-all duration-300 cursor-pointer"
-        role="listitem"
-      >
-        <div class="flex flex-col items-center">
-          <div class="w-20 h-20 rounded-full bg-gray-300 dark:bg-gray-700 mb-3 overflow-hidden hover-scale">
-            <img 
-              src={queuer.avatar} 
-              alt={`Foto de perfil de ${queuer.name}`} 
-              onerror="this.src='/avatars/default.jpg'" 
-              class="w-full h-full object-cover" 
-              loading="lazy"
-              width="80"
-              height="80"
-            />
-          </div>
-          
-          <h3 class="font-semibold text-lg dark:text-gray-100">{queuer.name}</h3>
-          
-          <div class="flex items-center mt-1" aria-label={`Valoración: ${queuer.rating} de 5 estrellas`}>
-            <span class="text-yellow-500" aria-hidden="true">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-              </svg>
-            </span>
-            <span class="ml-1 text-gray-800 dark:text-gray-200">{queuer.rating}</span>
-          </div>
-          
-          <p class="text-xs text-gray-600 dark:text-gray-300 mt-2 text-center">{queuer.speciality}</p>
-          
-          <div class="mt-3 flex justify-between w-full text-xs text-gray-600 dark:text-gray-300">
-            <span class="flex items-center" aria-label={`${queuer.completedQueues} servicios completados`}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1" aria-hidden="true">
-                <circle cx="12" cy="8" r="7"></circle>
-                <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
-              </svg>
-              {queuer.completedQueues}
-            </span>
-            <span class="flex items-center" aria-label={`Ciudad: ${queuer.city}`}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1" aria-hidden="true">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                <circle cx="12" cy="10" r="3"></circle>
-              </svg>
-              {queuer.city}
-            </span>
-          </div>
-          
-          {isAuthenticated ? (
-            <div class="flex flex-col w-full gap-2 mt-4">
-              <Button
-                href={`/queuer/${queuer.id}`}
-                variant="outline"
-                class="w-full py-2 text-sm flex items-center justify-center"
-              >
-                <span>Ver perfil</span>
-              </Button>
-              <Button
-                href={`/reservation/${queuer.id}`}
-                variant="primary"
-                class="w-full py-2 text-sm flex items-center justify-center"
-              >
-                <span>Reservar</span>
-              </Button>
+  <!-- Contenedor del carrusel -->
+  <div class="carousel-container relative overflow-hidden">
+    <div id="carousel-track" class="carousel-track flex transition-transform duration-500 ease-in-out">
+      {validQueuers.length > 0 ? (
+        validQueuers.map((queuer) => (
+          <div class="carousel-item" role="listitem">
+            <div class="mx-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4 shadow-sm hover:shadow-lg transition-all duration-300 h-full flex flex-col">
+              <!-- Encabezado con imagen y rating -->
+              <div class="flex items-center mb-3">
+                <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gray-300 dark:bg-gray-700 overflow-hidden hover-scale flex-shrink-0">
+                  <img 
+                    src={queuer.avatar_url || "/avatars/default.jpg"} 
+                    alt={`Foto de ${queuer.name}`}
+                    onerror="this.src='/avatars/default.jpg'" 
+                    class="w-full h-full object-cover" 
+                    loading="lazy"
+                    width="64"
+                    height="64"
+                    fetchpriority="high"
+                  />
+                </div>
+                <div class="ml-3 flex-1">
+                  <h3 class="font-semibold text-base sm:text-lg dark:text-gray-100 line-clamp-1 font-inter tracking-tight">{queuer.name}</h3>
+                  <div class="flex items-center" aria-label={`Valoración: ${queuer.rating || '0'} de 5 estrellas`}>
+                    <span class="text-yellow-500" aria-hidden="true">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                      </svg>
+                    </span>
+                    <span class="ml-1 text-sm text-gray-800 dark:text-gray-200 font-medium">{queuer.rating?.toFixed(1) || 'Nuevo'}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Información principal -->
+              <div class="mb-3 pb-3 border-b border-gray-100 dark:border-gray-700">
+                <div class="flex items-center mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary mr-2" aria-hidden="true">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    <polyline points="7.5 4.21 12 6.81 16.5 4.21"></polyline>
+                    <polyline points="7.5 19.79 7.5 14.6 3 12"></polyline>
+                    <polyline points="21 12 16.5 14.6 16.5 19.79"></polyline>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                  </svg>
+                  <p class="text-sm text-gray-700 dark:text-gray-300 font-medium line-clamp-1 font-inter tracking-tight">{queuer.speciality || 'Servicios generales'}</p>
+                </div>
+                
+                <div class="flex justify-between">
+                  <div class="flex items-center" aria-label={`${queuer.completed_queues || 0} servicios completados`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500 mr-1" aria-hidden="true">
+                      <circle cx="12" cy="8" r="7"></circle>
+                      <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+                    </svg>
+                    <span class="text-sm font-inter text-gray-600 dark:text-gray-400">{queuer.completed_queues || 0} servicios</span>
+                  </div>
+                  
+                  <div class="flex items-center" aria-label={`Ciudad: ${queuer.city || 'No especificada'}`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-500 mr-1" aria-hidden="true">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                      <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    <span class="text-sm font-inter text-gray-600 dark:text-gray-400 truncate max-w-[100px]">{queuer.city || 'No especificada'}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Botones de acción -->
+              <div class="mt-auto w-full">
+                {isAuthenticated ? (
+                  <div class="flex items-center gap-2">
+                    <a
+                      href={`/queuer/${queuer.id}`}
+                      class="flex-1 py-2 text-center text-sm border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-400 transition-colors font-inter font-medium"
+                    >
+                      Ver perfil
+                    </a>
+                    <a
+                      href={`/reservation/${queuer.id}`}
+                      class="flex-1 py-2 text-center text-sm bg-primary text-white rounded-md hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-400 transition-colors font-inter font-medium"
+                    >
+                      Reservar
+                    </a>
+                  </div>
+                ) : (
+                  <div class="flex flex-col w-full">
+                    <a
+                      href={`/queuer/${queuer.id}`}
+                      class="w-full py-2 text-center text-sm bg-primary text-white rounded-md hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-400 transition-colors font-inter font-medium"
+                    >
+                      Ver perfil
+                    </a>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center font-inter">
+                      <a href="/login" class="text-primary hover:underline">Inicia sesión</a> para reservar
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
-          ) : (
-            <div class="flex flex-col w-full mt-4">
-              <Button
-                href={`/queuer/${queuer.id}`}
-                variant="primary"
-                class="w-full py-2 text-sm flex items-center justify-center"
-              >
-                <span>Ver perfil</span>
-              </Button>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-                <a href="/login" class="text-primary hover:underline">Inicia sesión</a> para reservar
-              </p>
-            </div>
-          )}
+          </div>
+        ))
+      ) : (
+        <div class="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8 text-center">
+          <p class="text-gray-700 dark:text-gray-300">
+            No hay representantes disponibles en este momento. Intenta más tarde.
+          </p>
         </div>
-      </div>
-    ))}
+      )}
+    </div>
   </div>
   
-  <div class="mt-4 sm:mt-6 text-center">
+  <div class="mt-6 text-center">
     <Button
       href="/queuers"
       variant="link"
@@ -170,4 +186,346 @@ const queuers = [
       </svg>
     </Button>
   </div>
-</section> 
+</section>
+
+<style>
+  /* Estilos para el carrusel */
+  .carousel-container {
+    position: relative;
+    overflow: hidden;
+    margin: 0 -8px; /* Compensar el padding de los items */
+  }
+  
+  .carousel-track {
+    display: flex;
+    transition: transform 0.5s ease-in-out;
+  }
+  
+  .carousel-item {
+    flex: 0 0 auto;
+    /* Los tamaños se manejarán desde JavaScript */
+    padding: 0;
+  }
+  
+  /* Animación para el carrusel */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  .carousel-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #ccc;
+    transition: background-color 0.3s ease;
+    margin: 0 2px;
+  }
+  
+  .carousel-indicator.active {
+    background-color: #4C6EF5; /* Color primario */
+  }
+  
+  /* Asegurar que las tarjetas tengan la misma altura */
+  .carousel-item > div {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .hover-scale {
+    transition: transform 0.3s ease;
+  }
+  
+  .hover-scale:hover {
+    transform: scale(1.05);
+  }
+  
+  /* Para la animación de aparición */
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+  
+  /* Manejar textos largos */
+  .truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  /* Limitar líneas de texto */
+  .line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  /* Ocultar elementos en dispositivos táctiles */
+  .touch-device\:hidden {
+    display: flex; /* Por defecto es visible */
+  }
+  
+  /* Los estilos adicionales se aplicarán mediante JavaScript */
+</style>
+
+<script define:vars={{ queuers: serializedQueuers, isAuthenticated: userIsAuthenticated }}>
+  // Parsear los datos serializados
+  const queuersData = JSON.parse(queuers);
+  let currentSlide = 0;
+  let slidesPerView = 1;
+  let maxSlide = 0;
+  let autoplayInterval = null;
+  let isTouchDevice = false;
+  
+  // Elementos del DOM
+  const track = document.getElementById('carousel-track');
+  const prevButton = document.getElementById('prev-button');
+  const nextButton = document.getElementById('next-button');
+  const indicators = document.getElementById('carousel-indicators');
+  const carouselItems = document.querySelectorAll('.carousel-item');
+  
+  // Verificar si el dispositivo es táctil
+  function checkTouchDevice() {
+    isTouchDevice = 'ontouchstart' in window || 
+      navigator.maxTouchPoints > 0 ||
+      navigator.msMaxTouchPoints > 0;
+      
+    // Aplicar clases según el tipo de dispositivo
+    if (isTouchDevice) {
+      // Ocultar botones de navegación en dispositivos táctiles
+      document.querySelectorAll('.touch-device\\:hidden').forEach(el => {
+        el.style.display = 'none';
+      });
+      
+      // Hacer los indicadores más grandes en dispositivos táctiles para facilitar la interacción
+      if (indicators) {
+        indicators.classList.add('py-2');
+      }
+    }
+    
+    return isTouchDevice;
+  }
+  
+  // Función para determinar cuántos elementos mostrar según el ancho de pantalla
+  function updateSlidesPerView() {
+    // Determinar cuántos slides mostrar basado en el ancho de pantalla
+    const windowWidth = window.innerWidth;
+    
+    if (windowWidth >= 1280) { // xl
+      slidesPerView = 4;
+    } else if (windowWidth >= 1024) { // lg
+      slidesPerView = 3;
+    } else if (windowWidth >= 768) { // md
+      slidesPerView = 2;
+    } else if (windowWidth >= 640) { // sm
+      slidesPerView = 2;
+    } else { // xs
+      slidesPerView = 1;
+    }
+    
+    // Recalcular el número máximo de slides
+    maxSlide = Math.max(0, Math.ceil(queuersData.length / slidesPerView) - 1);
+    
+    // Actualizar el ancho de los items del carrusel
+    carouselItems.forEach(item => {
+      const itemWidth = (100 / slidesPerView);
+      item.style.width = `${itemWidth}%`;
+    });
+    
+    // Actualizar los indicadores
+    updateIndicators();
+    
+    // Asegurarse de que currentSlide no exceda maxSlide
+    if (currentSlide > maxSlide) {
+      currentSlide = maxSlide;
+    }
+    
+    // Actualizar la posición del carrusel
+    updateCarouselPosition();
+  }
+  
+  // Función para actualizar los indicadores de posición
+  function updateIndicators() {
+    if (!indicators) return;
+    
+    // Limpiar indicadores existentes
+    indicators.innerHTML = '';
+    
+    // Solo mostrar indicadores si hay más de una página
+    if (maxSlide > 0) {
+      // Crear nuevos indicadores
+      for (let i = 0; i <= maxSlide; i++) {
+        const indicator = document.createElement('button');
+        indicator.classList.add('carousel-indicator');
+        indicator.setAttribute('aria-label', `Ir a grupo ${i + 1} de representantes`);
+        
+        // Hacer los indicadores más grandes en dispositivos táctiles
+        if (isTouchDevice) {
+          indicator.style.width = '12px';
+          indicator.style.height = '12px';
+          indicator.style.margin = '0 4px';
+        }
+        
+        if (i === currentSlide) {
+          indicator.classList.add('active');
+          indicator.setAttribute('aria-current', 'true');
+        }
+        
+        indicator.addEventListener('click', () => {
+          currentSlide = i;
+          updateCarouselPosition();
+          updateIndicatorStates();
+          restartAutoplay();
+        });
+        
+        indicators.appendChild(indicator);
+      }
+    }
+  }
+  
+  // Función para actualizar el estado de los indicadores
+  function updateIndicatorStates() {
+    const indicatorElements = indicators?.querySelectorAll('.carousel-indicator');
+    if (!indicatorElements) return;
+    
+    indicatorElements.forEach((el, idx) => {
+      if (idx === currentSlide) {
+        el.classList.add('active');
+        el.setAttribute('aria-current', 'true');
+      } else {
+        el.classList.remove('active');
+        el.removeAttribute('aria-current');
+      }
+    });
+    
+    // Actualizar estado de los botones
+    if (prevButton) {
+      prevButton.disabled = currentSlide === 0;
+      prevButton.classList.toggle('opacity-50', currentSlide === 0);
+    }
+    
+    if (nextButton) {
+      nextButton.disabled = currentSlide === maxSlide;
+      nextButton.classList.toggle('opacity-50', currentSlide === maxSlide);
+    }
+  }
+  
+  // Función para actualizar la posición del carrusel
+  function updateCarouselPosition() {
+    if (!track) return;
+    
+    // Calcular el desplazamiento basado en cuántos elementos se muestran por vista
+    const translateX = -(currentSlide * (100 / slidesPerView) * slidesPerView);
+    track.style.transform = `translateX(${translateX}%)`;
+    
+    updateIndicatorStates();
+  }
+  
+  // Manejar click en botón anterior
+  prevButton?.addEventListener('click', () => {
+    if (currentSlide > 0) {
+      currentSlide--;
+      updateCarouselPosition();
+      restartAutoplay();
+    }
+  });
+  
+  // Manejar click en botón siguiente
+  nextButton?.addEventListener('click', () => {
+    if (currentSlide < maxSlide) {
+      currentSlide++;
+      updateCarouselPosition();
+      restartAutoplay();
+    }
+  });
+  
+  // Función para iniciar/reiniciar autoplay
+  function startAutoplay() {
+    stopAutoplay();
+    
+    // Solo iniciar autoplay si hay más de un slide
+    if (maxSlide > 0) {
+      autoplayInterval = setInterval(() => {
+        currentSlide = (currentSlide < maxSlide) ? currentSlide + 1 : 0;
+        updateCarouselPosition();
+      }, 5000); // Cambiar cada 5 segundos
+    }
+  }
+  
+  // Función para detener autoplay
+  function stopAutoplay() {
+    if (autoplayInterval) {
+      clearInterval(autoplayInterval);
+      autoplayInterval = null;
+    }
+  }
+  
+  // Función para reiniciar autoplay
+  function restartAutoplay() {
+    stopAutoplay();
+    startAutoplay();
+  }
+  
+  // Actualizar al cambiar tamaño de ventana
+  window.addEventListener('resize', () => {
+    updateSlidesPerView();
+  });
+  
+  // Soporte para gestos táctiles (swipe)
+  let touchStartX = 0;
+  let touchEndX = 0;
+  
+  document.querySelector('.carousel-container')?.addEventListener('touchstart', (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+    stopAutoplay();
+  }, { passive: true });
+  
+  document.querySelector('.carousel-container')?.addEventListener('touchend', (e) => {
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipe();
+    startAutoplay();
+  }, { passive: true });
+  
+  function handleSwipe() {
+    const swipeThreshold = 50; // pixels
+    
+    if (touchEndX < touchStartX - swipeThreshold && currentSlide < maxSlide) {
+      // Swipe izquierda - siguiente
+      currentSlide++;
+      updateCarouselPosition();
+    }
+    
+    if (touchEndX > touchStartX + swipeThreshold && currentSlide > 0) {
+      // Swipe derecha - anterior
+      currentSlide--;
+      updateCarouselPosition();
+    }
+  }
+  
+  // Parar autoplay cuando el usuario interactúa con el carrusel
+  document.querySelector('.carousel-container')?.addEventListener('mouseenter', stopAutoplay);
+  document.querySelector('.carousel-container')?.addEventListener('mouseleave', startAutoplay);
+  
+  // Inicializar todo
+  document.addEventListener('DOMContentLoaded', () => {
+    // Verificar si es un dispositivo táctil
+    checkTouchDevice();
+    
+    if (queuersData && queuersData.length > 0) {
+      updateSlidesPerView();
+      startAutoplay();
+    }
+  });
+  
+  // Inicializar inmediatamente para evitar flasheo
+  if (queuersData && queuersData.length > 0) {
+    // Verificar inmediatamente si es un dispositivo táctil
+    checkTouchDevice();
+    
+    // Pequeño timeout para asegurar que los elementos DOM están disponibles
+    setTimeout(() => {
+      updateSlidesPerView();
+    }, 0);
+  }
+</script> 

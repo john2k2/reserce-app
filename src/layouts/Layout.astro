@@ -5,6 +5,7 @@ export interface Props {
 
 import { getSession } from '../lib/supabase.ts';
 import '../styles/animations.css';
+import '../styles/fonts.css';
 
 const { title } = Astro.props;
 
@@ -23,7 +24,7 @@ interface CriticalResource {
 // Recursos críticos que queremos precargar
 const criticalResources: CriticalResource[] = [
 	{ href: '/logo.svg', as: 'image' },
-	{ href: '/fonts/inter-var.woff2', as: 'font', crossorigin: 'anonymous' }
+	{ href: '/fonts/inter/InterVariable.woff2', as: 'font', crossorigin: 'anonymous' }
 ];
 ---
 
@@ -35,7 +36,6 @@ const criticalResources: CriticalResource[] = [
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
 		<title>{title}</title>
-		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 		<script is:inline>
 			// Script para manejar el cambio de tema
 			const theme = (() => {
@@ -71,10 +71,6 @@ const criticalResources: CriticalResource[] = [
 		
 		<!-- Establecer políticas de caché para la página -->
 		<meta http-equiv="Cache-Control" content="max-age=300" />
-		
-		<!-- DNS Prefetch para dominios de terceros -->
-		<link rel="dns-prefetch" href="https://fonts.googleapis.com" />
-		<link rel="dns-prefetch" href="https://fonts.gstatic.com" />
 		
 		<!-- Agregar información para SEO -->
 		<meta name="description" content="QueueMaster - La aplicación para gestionar tus filas de espera y representantes de forma eficiente" />
@@ -208,7 +204,7 @@ const criticalResources: CriticalResource[] = [
 		margin: 0;
 		width: 100%;
 		height: 100%;
-		font-family: 'Inter', sans-serif;
+		font-family: var(--font-family-sans);
 	}
 	
 	.dark .bg-gray-800 {

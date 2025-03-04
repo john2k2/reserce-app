@@ -1,5 +1,8 @@
 import { supabase, supabaseAdmin } from '../../lib/supabase.ts';
 
+// Código secreto para crear administradores (en producción debería estar en variables de entorno)
+const ADMIN_SECRET_CODE = 'admin-secret-2024';
+
 // Endpoint para manejar el registro de usuarios
 export const POST = async ({ request }) => {
   try {
@@ -22,8 +25,26 @@ export const POST = async ({ request }) => {
       );
     }
 
-    // Comprobar que el tipo de usuario es válido
-    if (!['client', 'queuer'].includes(body.user_type)) {
+    // Verificar si se intenta crear un administrador
+    if (body.user_type === 'admin') {
+      // Verificar el código secreto
+      if (!body.admin_secret_code || body.admin_secret_code !== ADMIN_SECRET_CODE) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: 'No tienes permisos para crear un usuario administrador.',
+          }),
+          {
+            status: 403,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+    } 
+    // Si no es admin, comprobar que el tipo de usuario es válido
+    else if (!['client', 'queuer'].includes(body.user_type)) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -58,6 +79,11 @@ export const POST = async ({ request }) => {
       userData.completed_queues = 0;
       userData.rating = null;
       userData.is_verified = false;
+    }
+    
+    // Si es administrador, establecer flag de admin
+    if (body.user_type === 'admin') {
+      userData.is_admin = true;
     }
     
     // Registro con Supabase Auth
@@ -115,6 +141,7 @@ export const POST = async ({ request }) => {
       city: userData.city,
       phone: userData.phone,
       is_active: true,
+      is_admin: userData.is_admin || false,
       created_at: new Date().toISOString(),
     };
     
