@@ -1,4 +1,4 @@
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase.ts';
 import { getSession, createReservation } from '../../lib/supabase.ts';
 
 /**

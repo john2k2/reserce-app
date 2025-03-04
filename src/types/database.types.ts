@@ -33,22 +33,18 @@ export interface Service {
 
 export interface Reservation {
   id: string;
+  created_at: string;
   client_id: string;
   queuer_id: string;
   service_id: string;
   date: string;
-  location?: string;
-  details?: string;
   status: ReservationStatus;
-  client_rating?: number;
-  client_review?: string;
-  created_at?: string;
-  updated_at?: string;
-  
-  // Relaciones
-  services?: Service;
-  profiles?: Profile; // El perfil del representante (queuer)
-  ['profiles!reservations_client_id_fkey']?: Profile; // El perfil del cliente
+  client_rating?: number | null;
+  client_review?: string | null;
+  total_amount?: number | null;
+  queuer_notes?: string | null;
+  profiles?: Profile; // El perfil del cliente
+  services?: Service; // El servicio reservado
   ['profiles!reservations_queuer_id_fkey']?: Profile; // Otra forma de acceder al perfil del representante
 }
 

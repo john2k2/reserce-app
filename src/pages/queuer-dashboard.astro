@@ -1,0 +1,405 @@
+---
+import AppLayout from '../layouts/AppLayout.astro';
+import { getSession, getProfileByUserId, getQueuerReservations } from '../lib/supabase.ts';
+import type { Profile, Reservation } from '../types/database.types';
+
+// Verificar si el usuario está autenticado
+const { data: sessionData, error: sessionError } = await getSession();
+const session = sessionData?.session;
+
+// Redireccionar si no hay sesión
+if (!session) {
+  return Astro.redirect('/login?redirect=/queuer-dashboard');
+}
+
+// Obtener perfil del usuario
+let profile: Profile | null = null;
+let error: string | null = null;
+let activeReservations: Reservation[] = [];
+let historyReservations: Reservation[] = [];
+let isQueuer = false;
+
+try {
+  // Obtener perfil
+  const { data: userData, error: userError } = await getProfileByUserId(session.user.id);
+  
+  if (userError) {
+    console.error('Error al obtener perfil:', userError);
+    error = 'No se pudo cargar tu perfil. Por favor, intenta de nuevo más tarde.';
+  } else if (userData) {
+    profile = userData;
+    // Asegurarse de que profile no sea null antes de acceder a sus propiedades
+    if (profile) {
+      isQueuer = profile.user_type === 'queuer';
+      
+      // Redireccionar si no es un representante
+      if (!isQueuer) {
+        return Astro.redirect('/dashboard');
+      }
+      
+      // Obtener reservas activas (pendientes, confirmadas, en progreso)
+      const { data: activeData, error: activeError } = await getQueuerReservations(
+        profile.id, 
+        ['pending', 'confirmed', 'in_progress']
+      );
+      
+      if (activeError) {
+        console.error('Error al obtener reservas activas:', activeError);
+      } else if (activeData) {
+        activeReservations = activeData;
+      }
+      
+      // Obtener historial de reservas (completadas, canceladas)
+      const { data: historyData, error: historyError } = await getQueuerReservations(
+        profile.id, 
+        ['completed', 'cancelled']
+      );
+      
+      if (historyError) {
+        console.error('Error al obtener historial de reservas:', historyError);
+      } else if (historyData) {
+        historyReservations = historyData;
+      }
+    }
+  }
+} catch (e) {
+  console.error('Error inesperado:', e);
+  error = 'Ocurrió un error inesperado. Por favor, intenta de nuevo más tarde.';
+}
+
+// Estadísticas del representante
+const stats = {
+  totalReservations: activeReservations.length + historyReservations.length,
+  completedReservations: historyReservations.filter(r => r.status === 'completed').length,
+  cancelledReservations: historyReservations.filter(r => r.status === 'cancelled').length,
+  pendingReservations: activeReservations.filter(r => r.status === 'pending').length,
+  confirmedReservations: activeReservations.filter(r => r.status === 'confirmed').length,
+  inProgressReservations: activeReservations.filter(r => r.status === 'in_progress').length,
+  rating: profile?.rating || 0,
+  earnings: historyReservations
+    .filter(r => r.status === 'completed')
+    .reduce((sum, r) => sum + (r.total_amount || 0), 0)
+};
+
+// Función para formatear fechas
+function formatDate(dateString: string) {
+  const date = new Date(dateString);
+  return new Intl.DateTimeFormat('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date);
+}
+
+// Función para obtener el color de estado
+function getStatusColor(status: string) {
+  switch (status) {
+    case 'pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+    case 'confirmed': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+    case 'in_progress': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
+    case 'completed': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+    case 'cancelled': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+    default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+  }
+}
+
+// Función para traducir el estado
+function translateStatus(status: string) {
+  switch (status) {
+    case 'pending': return 'Pendiente';
+    case 'confirmed': return 'Confirmada';
+    case 'in_progress': return 'En progreso';
+    case 'completed': return 'Completada';
+    case 'cancelled': return 'Cancelada';
+    default: return status;
+  }
+}
+  ---
+<AppLayout title="Panel de Representante | QueueMaster">
+  <div class="space-y-6">
+    <!-- Mensaje de error -->
+    {error && (
+      <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 dark:bg-red-900 dark:text-red-300 rounded-lg" role="alert">
+        <p>{error}</p>
+      </div>
+    )}
+    
+    <!-- Encabezado de bienvenida -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+        <div class="flex items-center mb-4 md:mb-0">
+          <div class="relative">
+            <img 
+              src={profile?.avatar_url || "/images/default-avatar.png"} 
+              alt="Avatar" 
+              class="w-16 h-16 rounded-full object-cover border-2 border-primary"
+            />
+            {profile?.is_verified && (
+              <span class="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+              </span>
+            )}
+          </div>
+          <div class="ml-4">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+              Hola, {profile?.name || 'Representante'}
+            </h1>
+            <p class="text-gray-600 dark:text-gray-400">
+              {profile?.speciality || 'Representante'} • {profile?.city || 'Sin ubicación'}
+            </p>
+          </div>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <a href="/profile" class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            Editar perfil
+          </a>
+          <a href="/queuer-services" class="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+              <path d="M12 5v14"></path>
+              <path d="M5 12h14"></path>
+            </svg>
+            Gestionar servicios
+          </a>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Estadísticas -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+        <div class="flex items-center">
+          <div class="p-3 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-500 dark:text-blue-300 mr-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Calificación</p>
+            <p class="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+              {stats.rating.toFixed(1)}
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" class="text-yellow-500 ml-1">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+        <div class="flex items-center">
+          <div class="p-3 rounded-full bg-green-100 dark:bg-green-900 text-green-500 dark:text-green-300 mr-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="8" r="7"></circle>
+              <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Completadas</p>
+            <p class="text-lg font-semibold text-gray-900 dark:text-white">{stats.completedReservations}</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+        <div class="flex items-center">
+          <div class="p-3 rounded-full bg-yellow-100 dark:bg-yellow-900 text-yellow-500 dark:text-yellow-300 mr-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Pendientes</p>
+            <p class="text-lg font-semibold text-gray-900 dark:text-white">{stats.pendingReservations + stats.confirmedReservations}</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+        <div class="flex items-center">
+          <div class="p-3 rounded-full bg-purple-100 dark:bg-purple-900 text-purple-500 dark:text-purple-300 mr-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="1" x2="12" y2="23"></line>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Ganancias</p>
+            <p class="text-lg font-semibold text-gray-900 dark:text-white">${stats.earnings.toLocaleString()}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Reservas activas -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
+      <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Reservas activas</h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400">Gestiona tus reservas pendientes, confirmadas y en progreso</p>
+      </div>
+      
+      {activeReservations.length === 0 ? (
+        <div class="p-6 text-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-gray-400 dark:text-gray-600 mb-4">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          <p class="text-gray-600 dark:text-gray-400">No tienes reservas activas en este momento</p>
+          <p class="text-sm text-gray-500 dark:text-gray-500 mt-1">Las nuevas reservas aparecerán aquí</p>
+        </div>
+      ) : (
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-900">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cliente</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Servicio</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Monto</th>
+                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              {activeReservations.map((reservation) => (
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <div class="flex-shrink-0 h-10 w-10">
+                        <img class="h-10 w-10 rounded-full object-cover" src={reservation.profiles?.avatar_url || "/images/default-avatar.png"} alt={reservation.profiles?.name || "Cliente"} />
+                      </div>
+                      <div class="ml-4">
+                        <div class="text-sm font-medium text-gray-900 dark:text-white">{reservation.profiles?.name || "Cliente"}</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">{reservation.profiles?.email || ""}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900 dark:text-white">{reservation.services?.name || "Servicio"}</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">ID: {reservation.service_id.substring(0, 8)}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900 dark:text-white">{formatDate(reservation.date)}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(reservation.status)}`}>
+                      {translateStatus(reservation.status)}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                    ${reservation.total_amount?.toLocaleString() || "0"}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <a href={`/reservation/${reservation.id}`} class="text-primary hover:text-primary-dark dark:text-blue-400 dark:hover:text-blue-300">Ver detalles</a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+    
+    <!-- Historial de reservas -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
+      <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Historial de reservas</h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400">Revisa tus reservas completadas y canceladas</p>
+      </div>
+      
+      {historyReservations.length === 0 ? (
+        <div class="p-6 text-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-gray-400 dark:text-gray-600 mb-4">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          <p class="text-gray-600 dark:text-gray-400">No tienes historial de reservas</p>
+          <p class="text-sm text-gray-500 dark:text-gray-500 mt-1">Las reservas completadas y canceladas aparecerán aquí</p>
+        </div>
+      ) : (
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-900">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cliente</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Servicio</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valoración</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Monto</th>
+                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              {historyReservations.map((reservation) => (
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <div class="flex-shrink-0 h-10 w-10">
+                        <img class="h-10 w-10 rounded-full object-cover" src={reservation.profiles?.avatar_url || "/images/default-avatar.png"} alt={reservation.profiles?.name || "Cliente"} />
+                      </div>
+                      <div class="ml-4">
+                        <div class="text-sm font-medium text-gray-900 dark:text-white">{reservation.profiles?.name || "Cliente"}</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">{reservation.profiles?.email || ""}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900 dark:text-white">{reservation.services?.name || "Servicio"}</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">ID: {reservation.service_id.substring(0, 8)}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900 dark:text-white">{formatDate(reservation.date)}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(reservation.status)}`}>
+                      {translateStatus(reservation.status)}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    {reservation.client_rating ? (
+                      <div class="flex items-center">
+                        <span class="text-yellow-500 mr-1">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" class="text-yellow-500">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                          </svg>
+                        </span>
+                        <span class="text-sm text-gray-900 dark:text-white">{reservation.client_rating}</span>
+                      </div>
+                    ) : (
+                      <span class="text-sm text-gray-500 dark:text-gray-400">Sin valoración</span>
+                    )}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                    ${reservation.total_amount?.toLocaleString() || "0"}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <a href={`/reservation/${reservation.id}`} class="text-primary hover:text-primary-dark dark:text-blue-400 dark:hover:text-blue-300">Ver detalles</a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  </div>
+</AppLayout>
+
+<script>
+  // Código JavaScript para la página
+  document.addEventListener('DOMContentLoaded', () => {
+    // Aquí puedes agregar cualquier funcionalidad interactiva que necesites
+  });
+</script> 

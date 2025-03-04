@@ -1,4 +1,4 @@
-import { supabase, supabaseAdmin } from '../../lib/supabase';
+import { supabase, supabaseAdmin } from '../../lib/supabase.ts';
 
 // Endpoint para manejar el registro de usuarios
 export const POST = async ({ request }) => {

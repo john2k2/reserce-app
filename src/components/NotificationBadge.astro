@@ -1,11 +1,18 @@
 ---
 // Reusable component for notification icons with badges
+import { getSession } from '../lib/supabase.ts';
+
 interface Props {
   type: 'notification' | 'message';
   count: number;
+  isAuthenticated?: boolean;
 }
 
-const { type, count } = Astro.props;
+// Get authentication status if not provided
+const { data: sessionData } = await getSession();
+const defaultIsAuthenticated = !!sessionData?.session;
+
+const { type, count, isAuthenticated = defaultIsAuthenticated } = Astro.props;
 
 // Set icon path based on type
 const iconPath = type === 'notification'
@@ -15,18 +22,40 @@ const iconPath = type === 'notification'
 const ariaLabel = type === 'notification'
   ? `${count} notificaciones nuevas`
   : `${count} mensajes nuevos`;
+
+// Determine destination based on notification type
+const destination = isAuthenticated 
+  ? (type === 'notification' ? '/notifications' : '/messages') 
+  : '/login';
 ---
 
-<button class="relative p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-400 transition-all duration-200" aria-label={`Mostrar ${type === 'notification' ? 'notificaciones' : 'mensajes'}`}>
-  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={iconPath} />
-  </svg>
-  {count > 0 && (
-    <span class="absolute top-1 right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-500 rounded-full transition-all duration-300 animate-pulse" aria-label={ariaLabel}>
-      {count}
-    </span>
-  )}
-</button>
+{isAuthenticated ? (
+  <a 
+    href={destination} 
+    class="relative p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-400 transition-all duration-200" 
+    aria-label={`Mostrar ${type === 'notification' ? 'notificaciones' : 'mensajes'}`}
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={iconPath} />
+    </svg>
+    {count > 0 && (
+      <span class="absolute top-1 right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-500 rounded-full transition-all duration-300 animate-pulse" aria-label={ariaLabel}>
+        {count}
+      </span>
+    )}
+  </a>
+) : (
+  <button 
+    onclick="window.location.href='/login'" 
+    class="relative p-2 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-400 transition-all duration-200" 
+    aria-label={`Iniciar sesión para ver ${type === 'notification' ? 'notificaciones' : 'mensajes'}`}
+    title={`Iniciar sesión para ver ${type === 'notification' ? 'notificaciones' : 'mensajes'}`}
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={iconPath} />
+    </svg>
+  </button>
+)}
 
 <script>
   // Optional client-side interactivity can be added here

@@ -1,6 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase.ts';
 import { getSession, getProfileByUserId } from '../lib/supabase.ts';
 import type { Profile } from '../types/database.types';
 

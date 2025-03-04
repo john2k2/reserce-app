@@ -1,4 +1,4 @@
-import { supabase, supabaseAdmin } from '../../lib/supabase';
+import { supabase, supabaseAdmin } from '../../lib/supabase.ts';
 import { getSession } from '../../lib/supabase.ts';
 
 // Endpoint para subir imágenes de avatar

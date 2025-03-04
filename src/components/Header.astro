@@ -1,7 +1,5 @@
 ---
-import { getSession } from '../lib/auth';
-import { supabase } from '../lib/supabase';
-import { getProfileByUserId } from '../lib/supabase.ts';
+import { getSession, getProfileByUserId, supabase } from '../lib/supabase.ts';
 import type { Profile } from '../types/database.types';
 import UserNavigation from './UserNavigation.astro';
 import NotificationBadge from './NotificationBadge.astro';
@@ -10,6 +8,7 @@ import FormInput from './ui/FormInput.astro';
 // Server-side authentication check
 const { data: sessionData } = await getSession();
 const session = sessionData?.session;
+const isAuthenticated = !!session;
 
 // Default user info
 let profile: Profile | null = null;
@@ -26,12 +25,11 @@ if (session) {
   }
 }
 
-// In a real app, these would come from a dedicated notifications API
-// For now, we use placeholder values for demonstration
+// Notification counts based on authentication status
 let notificationCount = 0;
 let messageCount = 0;
 
-if (session) {
+if (isAuthenticated) {
   // This would be replaced with actual API calls in a production app
   // For example: const { data } = await getUnreadNotificationCount(session.user.id);
   notificationCount = profile?.user_type === 'queuer' ? 3 : 2;
@@ -49,7 +47,7 @@ if (session) {
     
     <!-- Mobile user actions -->
     <div class="flex items-center space-x-2">
-      <NotificationBadge type="notification" count={notificationCount} />
+      <NotificationBadge type="notification" count={notificationCount} isAuthenticated={isAuthenticated} />
       <UserNavigation session={session} userName={userName} userAvatar={userAvatar} isMobile={true} />
     </div>
   </div>
@@ -71,14 +69,14 @@ if (session) {
     />
   </div>
   
-  <!-- Desktop user actions -->
+  <!-- Desktop notifications only -->
   <div class="hidden sm:flex items-center space-x-4">
-    <NotificationBadge type="notification" count={notificationCount} />
-    <NotificationBadge type="message" count={messageCount} />
-    
-    <div class="border-l border-gray-200 dark:border-gray-700 h-6 mx-2" aria-hidden="true"></div>
-    
-    <UserNavigation session={session} userName={userName} userAvatar={userAvatar} />
+    {isAuthenticated && (
+      <>
+        <NotificationBadge type="notification" count={notificationCount} isAuthenticated={isAuthenticated} />
+        <NotificationBadge type="message" count={messageCount} isAuthenticated={isAuthenticated} />
+      </>
+    )}
   </div>
 </header>
 

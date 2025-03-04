@@ -1,7 +1,13 @@
 ---
 // Import the Button component
 import Button from './ui/Button.astro';
+import { getSession } from '../lib/supabase.ts';
 
+// Check if user is authenticated
+const { data: sessionData } = await getSession();
+const isAuthenticated = !!sessionData?.session;
+
+// Featured queuers data
 const queuers = [
   {
     id: "Q001",
@@ -114,13 +120,37 @@ const queuers = [
             </span>
           </div>
           
-          <Button
-            href={`/queuer/${queuer.id}`}
-            variant="primary"
-            class="mt-4 w-full py-2 text-sm flex items-center justify-center"
-          >
-            <span>Ver perfil</span>
-          </Button>
+          {isAuthenticated ? (
+            <div class="flex flex-col w-full gap-2 mt-4">
+              <Button
+                href={`/queuer/${queuer.id}`}
+                variant="outline"
+                class="w-full py-2 text-sm flex items-center justify-center"
+              >
+                <span>Ver perfil</span>
+              </Button>
+              <Button
+                href={`/reservation/${queuer.id}`}
+                variant="primary"
+                class="w-full py-2 text-sm flex items-center justify-center"
+              >
+                <span>Reservar</span>
+              </Button>
+            </div>
+          ) : (
+            <div class="flex flex-col w-full mt-4">
+              <Button
+                href={`/queuer/${queuer.id}`}
+                variant="primary"
+                class="w-full py-2 text-sm flex items-center justify-center"
+              >
+                <span>Ver perfil</span>
+              </Button>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+                <a href="/login" class="text-primary hover:underline">Inicia sesión</a> para reservar
+              </p>
+            </div>
+          )}
         </div>
       </div>
     ))}

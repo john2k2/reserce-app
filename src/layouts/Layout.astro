@@ -3,7 +3,7 @@ export interface Props {
 	title: string;
 }
 
-import { getSession } from '../lib/auth';
+import { getSession } from '../lib/supabase.ts';
 import '../styles/animations.css';
 
 const { title } = Astro.props;
@@ -103,16 +103,12 @@ const criticalResources: CriticalResource[] = [
 		<!-- Unificado los scripts en uno solo para mejorar el rendimiento -->
 		<script is:inline>
 			document.addEventListener('DOMContentLoaded', function() {
-				// Inicialización del tema
+				// Inicializar funcionalidades
 				setupThemeToggle();
-				
-				// Inicialización del menú de usuario
 				setupUserMenu();
-				
-				// Inicialización del botón de logout
 				setupLogoutButton();
 				
-				// Funciones de utilidad
+				// Función para alternar el tema claro/oscuro
 				function setupThemeToggle() {
 					const themeToggle = document.getElementById('theme-toggle');
 					if (themeToggle) {
@@ -144,9 +140,13 @@ const criticalResources: CriticalResource[] = [
 				}
 				
 				function setupLogoutButton() {
-					const logoutButton = document.getElementById('logout-button');
-					if (logoutButton) {
-						logoutButton.addEventListener('click', async function() {
+					// Buscar todos los enlaces de cierre de sesión
+					const logoutLinks = document.querySelectorAll('a[href="/api/logout"]');
+					
+					logoutLinks.forEach(link => {
+						link.addEventListener('click', async function(e) {
+							e.preventDefault();
+							
 							try {
 								const response = await fetch('/api/logout', {
 									method: 'POST',
@@ -164,7 +164,7 @@ const criticalResources: CriticalResource[] = [
 								console.error('Error al cerrar sesión:', error);
 							}
 						});
-					}
+					});
 				}
 			});
 		</script>

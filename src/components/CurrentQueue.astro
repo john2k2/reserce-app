@@ -1,5 +1,12 @@
 ---
-const currentQueue = {
+import { getSession } from '../lib/supabase.ts';
+
+// Check if user is authenticated
+const { data: sessionData } = await getSession();
+const isAuthenticated = !!sessionData?.session;
+
+// Current queue data - only show if authenticated
+const currentQueue = isAuthenticated ? {
   id: "R-12345",
   location: "Concierto de Bad Bunny",
   queuer: "Carlos Mendoza",
@@ -9,7 +16,7 @@ const currentQueue = {
   estimatedTime: "1 hora 30 minutos",
   startTime: "13:30",
   venue: "Estadio Monumental"
-};
+} : null;
 ---
 
 <section class="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 border-l-4 border-[#32CD32] shadow-sm transition-all duration-300 hover:shadow-md" aria-labelledby="current-queue-heading">
@@ -25,68 +32,94 @@ const currentQueue = {
     <h2 id="current-queue-heading" class="text-xl font-semibold dark:text-gray-100">Tu fila actual</h2>
   </div>
 
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4" role="list" aria-label="Detalles de la fila actual">
-    <div role="listitem" class="bg-gray-50 dark:bg-gray-700/30 p-3 rounded-md">
-      <p class="text-gray-500 dark:text-gray-400 text-sm uppercase font-medium mb-1">Evento:</p>
-      <p class="font-semibold text-gray-900 dark:text-white">{currentQueue.location}</p>
-    </div>
-    <div role="listitem" class="bg-gray-50 dark:bg-gray-700/30 p-3 rounded-md">
-      <p class="text-gray-500 dark:text-gray-400 text-sm uppercase font-medium mb-1">Tu representante:</p>
-      <p class="font-semibold">
+  {isAuthenticated && currentQueue ? (
+    <>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4" role="list" aria-label="Detalles de la fila actual">
+        <div role="listitem" class="bg-gray-50 dark:bg-gray-700/30 p-3 rounded-md">
+          <p class="text-gray-500 dark:text-gray-400 text-sm uppercase font-medium mb-1">Evento:</p>
+          <p class="font-semibold text-gray-900 dark:text-white">{currentQueue.location}</p>
+        </div>
+        <div role="listitem" class="bg-gray-50 dark:bg-gray-700/30 p-3 rounded-md">
+          <p class="text-gray-500 dark:text-gray-400 text-sm uppercase font-medium mb-1">Tu representante:</p>
+          <p class="font-semibold">
+            <a 
+              href={`/queuer/${currentQueue.queuerId}`} 
+              class="text-primary hover:underline dark:text-blue-400 dark:hover:text-blue-300 focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-400 rounded"
+              aria-label={`Ver perfil del representante ${currentQueue.queuer}`}
+            >
+              {currentQueue.queuer}
+            </a>
+          </p>
+        </div>
+        <div role="listitem" class="bg-gray-50 dark:bg-gray-700/30 p-3 rounded-md">
+          <p class="text-gray-500 dark:text-gray-400 text-sm uppercase font-medium mb-1">Estado:</p>
+          <p class="font-semibold text-green-600 dark:text-green-400 flex items-center">
+            <span class="inline-block w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+            {currentQueue.status}
+          </p>
+        </div>
+        <div role="listitem" class="bg-gray-50 dark:bg-gray-700/30 p-3 rounded-md">
+          <p class="text-gray-500 dark:text-gray-400 text-sm uppercase font-medium mb-1">Posición en fila:</p>
+          <p class="font-semibold text-gray-900 dark:text-white">{currentQueue.position}</p>
+        </div>
+        <div role="listitem" class="bg-gray-50 dark:bg-gray-700/30 p-3 rounded-md">
+          <p class="text-gray-500 dark:text-gray-400 text-sm uppercase font-medium mb-1">Tiempo estimado:</p>
+          <p class="font-semibold text-gray-900 dark:text-white">{currentQueue.estimatedTime}</p>
+        </div>
+        <div role="listitem" class="bg-gray-50 dark:bg-gray-700/30 p-3 rounded-md">
+          <p class="text-gray-500 dark:text-gray-400 text-sm uppercase font-medium mb-1">Lugar:</p>
+          <p class="font-semibold text-gray-900 dark:text-white">{currentQueue.venue}</p>
+        </div>
+      </div>
+
+      <div class="flex items-center mb-4">
         <a 
-          href={`/queuer/${currentQueue.queuerId}`} 
-          class="text-primary hover:underline dark:text-blue-400 dark:hover:text-blue-300 focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-400 rounded"
-          aria-label={`Ver perfil del representante ${currentQueue.queuer}`}
+          href={`/tracking/${currentQueue.id}`} 
+          class="text-primary hover:text-primary-dark flex items-center dark:text-blue-400 dark:hover:text-blue-300 focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-400 rounded p-1"
+          aria-label="Ver la ubicación del representante en tiempo real"
         >
-          {currentQueue.queuer}
+          Ver ubicación en vivo
+          <span class="ml-1 rounded-full bg-blue-100 dark:bg-blue-900 w-5 h-5 inline-flex items-center justify-center text-xs text-blue-800 dark:text-blue-200" title="La precisión puede variar dependiendo de la conexión">i</span>
         </a>
-      </p>
-    </div>
-    <div role="listitem" class="bg-gray-50 dark:bg-gray-700/30 p-3 rounded-md">
-      <p class="text-gray-500 dark:text-gray-400 text-sm uppercase font-medium mb-1">Estado:</p>
-      <p class="font-semibold text-green-600 dark:text-green-400 flex items-center">
-        <span class="inline-block w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-        {currentQueue.status}
-      </p>
-    </div>
-    <div role="listitem" class="bg-gray-50 dark:bg-gray-700/30 p-3 rounded-md">
-      <p class="text-gray-500 dark:text-gray-400 text-sm uppercase font-medium mb-1">Posición en fila:</p>
-      <p class="font-semibold text-gray-900 dark:text-white">{currentQueue.position}</p>
-    </div>
-    <div role="listitem" class="bg-gray-50 dark:bg-gray-700/30 p-3 rounded-md">
-      <p class="text-gray-500 dark:text-gray-400 text-sm uppercase font-medium mb-1">Tiempo estimado:</p>
-      <p class="font-semibold text-gray-900 dark:text-white">{currentQueue.estimatedTime}</p>
-    </div>
-    <div role="listitem" class="bg-gray-50 dark:bg-gray-700/30 p-3 rounded-md">
-      <p class="text-gray-500 dark:text-gray-400 text-sm uppercase font-medium mb-1">Lugar:</p>
-      <p class="font-semibold text-gray-900 dark:text-white">{currentQueue.venue}</p>
-    </div>
-  </div>
+      </div>
 
-  <div class="flex items-center mb-4">
-    <a 
-      href={`/tracking/${currentQueue.id}`} 
-      class="text-primary hover:text-primary-dark flex items-center dark:text-blue-400 dark:hover:text-blue-300 focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-blue-400 rounded p-1"
-      aria-label="Ver la ubicación del representante en tiempo real"
-    >
-      Ver ubicación en vivo
-      <span class="ml-1 rounded-full bg-blue-100 dark:bg-blue-900 w-5 h-5 inline-flex items-center justify-center text-xs text-blue-800 dark:text-blue-200" title="La precisión puede variar dependiendo de la conexión">i</span>
-    </a>
-  </div>
-
-  <div class="flex flex-col sm:flex-row justify-between gap-3 sm:gap-0">
-    <button 
-      class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 order-2 sm:order-1 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-500 transition-colors duration-200"
-      aria-label="Cancelar reserva actual"
-    >
-      Cancelar
-    </button>
-    <a 
-      href={`/messages/${currentQueue.queuerId}`} 
-      class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark inline-block text-center order-1 sm:order-2 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors duration-200"
-      aria-label={`Contactar al representante ${currentQueue.queuer}`}
-    >
-      Contactar
-    </a>
-  </div>
+      <div class="flex flex-col sm:flex-row justify-between gap-3 sm:gap-0">
+        <button 
+          class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 order-2 sm:order-1 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-500 transition-colors duration-200"
+          aria-label="Cancelar reserva actual"
+        >
+          Cancelar
+        </button>
+        <a 
+          href={`/messages/${currentQueue.queuerId}`} 
+          class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark inline-block text-center order-1 sm:order-2 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors duration-200"
+          aria-label={`Contactar al representante ${currentQueue.queuer}`}
+        >
+          Contactar
+        </a>
+      </div>
+    </>
+  ) : (
+    <div class="py-6 flex flex-col items-center">
+      <p class="text-gray-500 dark:text-gray-400 mb-4 text-center">No estás en ninguna fila en este momento.</p>
+      
+      {isAuthenticated ? (
+        <a href="/search" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark inline-block text-center focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors duration-200">
+          Buscar servicios
+        </a>
+      ) : (
+        <div class="flex flex-col items-center space-y-3">
+          <p class="text-gray-600 dark:text-gray-300 text-center text-sm mb-2">Inicia sesión para reservar un lugar en la fila</p>
+          <div class="flex space-x-3">
+            <a href="/login" class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-500 transition-colors duration-200">
+              Iniciar sesión
+            </a>
+            <a href="/register" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark inline-block text-center focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors duration-200">
+              Registrarse
+            </a>
+          </div>
+        </div>
+      )}
+    </div>
+  )}
 </section> 

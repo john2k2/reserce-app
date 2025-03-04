@@ -1,0 +1,240 @@
+---
+import AppLayout from '../layouts/AppLayout.astro';
+import { getSession, getProfileByUserId, getQueuerServices, getAllQueuerServices } from '../lib/supabase.ts';
+import type { Profile } from '../types/database.types';
+
+// Verificar si el usuario está autenticado
+const { data: sessionData, error: sessionError } = await getSession();
+const session = sessionData?.session;
+
+// Redireccionar si no hay sesión
+if (!session) {
+  return Astro.redirect('/login?redirect=/queuer-services');
+}
+
+// Obtener perfil del usuario
+let profile: Profile | null = null;
+let error: string | null = null;
+let services: any[] = [];
+let queuerServices: any[] = [];
+let isQueuer = false;
+
+try {
+  // Obtener perfil
+  const { data: userData, error: userError } = await getProfileByUserId(session.user.id);
+  
+  if (userError) {
+    console.error('Error al obtener perfil:', userError);
+    error = 'No se pudo cargar tu perfil. Por favor, intenta de nuevo más tarde.';
+  } else if (userData) {
+    profile = userData;
+    
+    // Verificar si es un representante
+    if (userData.user_type === 'queuer') {
+      isQueuer = true;
+      
+      // Obtener todos los servicios disponibles
+      const { data: allServices, error: servicesError } = await getAllQueuerServices();
+      
+      if (servicesError) {
+        console.error('Error al obtener servicios:', servicesError);
+      } else if (allServices) {
+        services = allServices;
+      }
+      
+      // Obtener servicios del representante
+      const { data: myServices, error: myServicesError } = await getQueuerServices(userData.id);
+      
+      if (myServicesError) {
+        console.error('Error al obtener servicios del representante:', myServicesError);
+      } else if (myServices) {
+        queuerServices = myServices;
+      }
+    } else {
+      // Redireccionar si no es un representante
+      return Astro.redirect('/dashboard');
+    }
+  }
+} catch (e) {
+  console.error('Error inesperado:', e);
+  error = 'Ocurrió un error inesperado. Por favor, intenta de nuevo más tarde.';
+}
+
+// Función para verificar si el representante ofrece un servicio
+function isServiceOffered(serviceId: string): boolean {
+  return queuerServices.some(qs => qs.service_id === serviceId);
+}
+---
+
+<AppLayout title="Gestión de Servicios | QueueMaster">
+  <div class="space-y-6">
+    <!-- Mensaje de error -->
+    {error && (
+      <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 dark:bg-red-900 dark:text-red-300 rounded-lg" role="alert">
+        <p>{error}</p>
+      </div>
+    )}
+    
+    <!-- Encabezado -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+            Gestión de Servicios
+          </h1>
+          <p class="text-gray-600 dark:text-gray-400">
+            Configura los servicios que ofreces como representante
+          </p>
+        </div>
+        <div class="mt-4 md:mt-0">
+          <a href="/queuer-dashboard" class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            Volver al panel
+          </a>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Lista de servicios -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
+      <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Servicios disponibles</h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400">Selecciona los servicios que ofreces como representante</p>
+      </div>
+      
+      {services.length === 0 ? (
+        <div class="p-6 text-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-gray-400 dark:text-gray-600 mb-4">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <p class="text-gray-600 dark:text-gray-400">No hay servicios disponibles en este momento</p>
+          <p class="text-sm text-gray-500 dark:text-gray-500 mt-1">Contacta al administrador para agregar servicios</p>
+        </div>
+      ) : (
+        <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {services.map(service => (
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex flex-col">
+              <div class="flex items-start justify-between mb-4">
+                <div>
+                  <h3 class="font-semibold text-gray-900 dark:text-white">{service.name}</h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">{service.description || 'Sin descripción'}</p>
+                </div>
+                <div class="flex-shrink-0">
+                  <label class="inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      class="sr-only peer" 
+                      checked={isServiceOffered(service.id)}
+                      data-service-id={service.id}
+                    />
+                    <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                  </label>
+                </div>
+              </div>
+              <div class="mt-auto">
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-gray-600 dark:text-gray-400">Tarifa por hora</span>
+                  <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">$</span>
+                    <input 
+                      type="number" 
+                      class="block w-24 pl-7 pr-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600 dark:text-white" 
+                      placeholder="0.00"
+                      min="0"
+                      step="0.01"
+                      data-service-id={service.id}
+                      value={queuerServices.find(qs => qs.service_id === service.id)?.rate_per_hour || ''}
+                      disabled={!isServiceOffered(service.id)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      
+      <div class="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+        <button 
+          type="button" 
+          id="save-services"
+          class="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+        >
+          Guardar cambios
+        </button>
+      </div>
+    </div>
+  </div>
+</AppLayout>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Manejar cambios en los checkboxes
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+      checkbox.addEventListener('change', (e) => {
+        const target = e.target as HTMLInputElement;
+        const serviceId = target.dataset.serviceId;
+        const rateInput = document.querySelector(`input[type="number"][data-service-id="${serviceId}"]`) as HTMLInputElement;
+        
+        if (rateInput) {
+          rateInput.disabled = !target.checked;
+          if (target.checked && !rateInput.value) {
+            rateInput.value = '0';
+          }
+        }
+      });
+    });
+    
+    // Manejar el guardado de servicios
+    const saveButton = document.getElementById('save-services');
+    saveButton?.addEventListener('click', async () => {
+      try {
+        // Recopilar datos de servicios seleccionados
+        const selectedServices: Array<{service_id: string, rate_per_hour: number}> = [];
+        checkboxes.forEach(checkbox => {
+          const cb = checkbox as HTMLInputElement;
+          const serviceId = cb.dataset.serviceId;
+          
+          if (cb.checked && serviceId) {
+            const rateInput = document.querySelector(`input[type="number"][data-service-id="${serviceId}"]`) as HTMLInputElement;
+            const rate = parseFloat(rateInput.value) || 0;
+            
+            selectedServices.push({
+              service_id: serviceId,
+              rate_per_hour: rate
+            });
+          }
+        });
+        
+        // Enviar datos al servidor
+        const response = await fetch('/api/queuer/services', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ services: selectedServices }),
+        });
+        
+        if (response.ok) {
+          // Mostrar mensaje de éxito
+          alert('Servicios actualizados correctamente');
+          // Recargar la página para mostrar los cambios
+          window.location.reload();
+        } else {
+          // Mostrar mensaje de error
+          const data = await response.json();
+          alert(`Error: ${data.message || 'No se pudieron actualizar los servicios'}`);
+        }
+      } catch (error) {
+        console.error('Error al guardar servicios:', error);
+        alert('Ocurrió un error al guardar los servicios. Por favor, intenta de nuevo.');
+      }
+    });
+  });
+</script> 

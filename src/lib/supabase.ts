@@ -3,9 +3,23 @@ import { createClient } from '@supabase/supabase-js';
 // Environment variables for Supabase connection
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+const supabaseServiceKey = import.meta.env.SUPABASE_SERVICE_KEY;
 
-// Create a single supabase client for interacting with the database
+// Create a standard client for client-side operations
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Create a service role client for server-side operations (with admin privileges)
+// IMPORTANT: This client should ONLY be used on the server-side (in API routes)
+// and NEVER exposed to the client
+// If service key is not available, fall back to anon key (but with limited permissions)
+export const supabaseAdmin = supabaseServiceKey 
+  ? createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+  : supabase;
 
 // User Authentication
 
@@ -56,8 +70,17 @@ export async function getCurrentUser() {
  * Get the current authenticated session
  */
 export async function getSession() {
-  const { data, error } = await supabase.auth.getSession();
-  return { data, error };
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) {
+      console.error('Error getting session:', error.message);
+      return { data: null, error };
+    }
+    return { data, error: null };
+  } catch (err) {
+    console.error('Unexpected error getting session:', err);
+    return { data: null, error: err };
+  }
 }
 
 // Profile Management
@@ -188,34 +211,24 @@ export async function getClientReservations(clientId: string | null | undefined,
 /**
  * Get reservations for a queuer
  */
-export async function getQueuerReservations(queuerId: string | null | undefined, status: string | string[] | null = null) {
-  // Si el queuerId es null o undefined, retornar un arreglo vacío
-  if (!queuerId) {
-    return { data: [], error: null };
+export async function getQueuerReservations(queuer_id: string, statuses: string[]) {
+  try {
+    const { data, error } = await supabase
+      .from('reservations')
+      .select(`
+        *,
+        profiles!reservations_client_id_fkey(*),
+        services(*)
+      `)
+      .eq('queuer_id', queuer_id)
+      .in('status', statuses)
+      .order('date', { ascending: false });
+    
+    return { data, error };
+  } catch (e) {
+    console.error('Error al obtener reservas del representante:', e);
+    return { data: null, error: e };
   }
-  
-  let query = supabase
-    .from('reservations')
-    .select(`
-      *,
-      profiles!reservations_client_id_fkey(id, name, avatar_url),
-      services(id, name, description)
-    `)
-    .eq('queuer_id', queuerId);
-  
-  if (status) {
-    if (Array.isArray(status)) {
-      query = query.in('status', status);
-    } else {
-      query = query.eq('status', status);
-    }
-  }
-  
-  query = query.order('date', { ascending: false });
-  
-  const { data, error } = await query;
-  
-  return { data, error };
 }
 
 /**
@@ -317,15 +330,13 @@ export async function getAllQueuerServices() {
   try {
     const { data, error } = await supabase
       .from('services')
-      .select('id, name, description')
+      .select('*')
       .order('name');
     
-    if (error) throw error;
-    
-    return { data, error: null };
-  } catch (error) {
-    console.error('Error al obtener servicios:', error);
-    return { data: [], error };
+    return { data, error };
+  } catch (e) {
+    console.error('Error al obtener todos los servicios:', e);
+    return { data: null, error: e };
   }
 }
 
@@ -481,17 +492,21 @@ export async function getQueuerCities() {
 /**
  * Get queuer services
  */
-export async function getQueuerServices(queuerId: string) {
-  const { data, error } = await supabase
-    .from('queuer_services')
-    .select(`
-      id,
-      service_id,
-      services(id, name, description)
-    `)
-    .eq('queuer_id', queuerId);
-  
-  return { data, error };
+export async function getQueuerServices(queuer_id: string) {
+  try {
+    const { data, error } = await supabase
+      .from('queuer_services')
+      .select(`
+        *,
+        services(*)
+      `)
+      .eq('queuer_id', queuer_id);
+    
+    return { data, error };
+  } catch (e) {
+    console.error('Error al obtener servicios del representante:', e);
+    return { data: null, error: e };
+  }
 }
 
 /**
