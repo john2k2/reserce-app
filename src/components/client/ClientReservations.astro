@@ -1,0 +1,298 @@
+---
+import type { Reservation, ReservationStatus } from '../../types/database.types';
+
+interface Props {
+  activeReservations: Reservation[];
+  historyReservations: Reservation[];
+}
+
+const { activeReservations, historyReservations } = Astro.props;
+
+// Formato de la fecha
+function formatDate(dateString: string | null | undefined): string {
+  if (!dateString) return 'Fecha no disponible';
+  
+  const options: Intl.DateTimeFormatOptions = { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric', 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  };
+  return new Date(dateString).toLocaleDateString('es-ES', options);
+}
+
+// Color y texto según el estado de la reserva
+function getStatusInfo(status: ReservationStatus | null | undefined): { color: string; text: string } {
+  if (!status) return { color: 'gray', text: 'Desconocido' };
+  
+  switch (status) {
+    case 'pending':
+      return { color: 'yellow', text: 'Pendiente' };
+    case 'confirmed':
+      return { color: 'blue', text: 'Confirmada' };
+    case 'in_progress':
+      return { color: 'green', text: 'En progreso' };
+    case 'completed':
+      return { color: 'green', text: 'Completada' };
+    case 'cancelled':
+      return { color: 'red', text: 'Cancelada' };
+    default:
+      return { color: 'gray', text: 'Desconocido' };
+  }
+}
+---
+
+<div class="space-y-8">
+  <!-- Reservas activas -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Reservas Activas</h2>
+    </div>
+    
+    {activeReservations.length > 0 ? (
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead class="bg-gray-50 dark:bg-gray-700">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Servicio</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Representante</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Fecha</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Estado</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            {activeReservations.map((reservation) => {
+              const statusInfo = getStatusInfo(reservation.status);
+              
+              return (
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-gray-900 dark:text-white">{reservation.services?.name || 'Servicio no especificado'}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <div class="flex-shrink-0 h-10 w-10 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
+                        <img 
+                          class="h-10 w-10 object-cover" 
+                          src={reservation.profiles?.avatar_url || "/avatars/default.jpg"} 
+                          alt="" 
+                          onerror="this.src='/avatars/default.jpg'; this.onerror=null;"
+                        />
+                      </div>
+                      <div class="ml-4">
+                        <div class="text-sm font-medium text-gray-900 dark:text-white">{reservation.profiles?.name || 'Representante no especificado'}</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">
+                          {reservation.profiles?.rating ? (
+                            <div class="flex items-center">
+                              <svg class="h-4 w-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                              </svg>
+                              <span class="ml-1">{reservation.profiles.rating}</span>
+                            </div>
+                          ) : (
+                            <span>Sin valoraciones</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900 dark:text-white">{formatDate(reservation.date)}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-${statusInfo.color}-100 text-${statusInfo.color}-800 dark:bg-${statusInfo.color}-900 dark:text-${statusInfo.color}-200`}>
+                      {statusInfo.text}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <a 
+                      href={`/reservation/${reservation.id}`} 
+                      class="text-primary hover:text-primary-dark dark:text-blue-400 dark:hover:text-blue-300 mr-3"
+                    >
+                      Ver detalles
+                    </a>
+                    
+                    {reservation.status === 'pending' && (
+                      <button 
+                        class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 cancel-reservation"
+                        data-reservation-id={reservation.id}
+                      >
+                        Cancelar
+                      </button>
+                    )}
+                    
+                    {reservation.status === 'completed' && !reservation.client_rating && (
+                      <a 
+                        href={`/rate/${reservation.id}`} 
+                        class="text-yellow-600 hover:text-yellow-800 dark:text-yellow-400 dark:hover:text-yellow-300"
+                      >
+                        Valorar
+                      </a>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    ) : (
+      <div class="py-8 text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400 dark:text-gray-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">No tienes reservas activas</h3>
+        <p class="text-gray-500 dark:text-gray-400 mb-4">Comienza buscando un representante para tus gestiones.</p>
+        <a 
+          href="/queuers" 
+          class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+        >
+          Buscar Representantes
+        </a>
+      </div>
+    )}
+  </div>
+  
+  <!-- Historial de reservas -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Historial de Reservas</h2>
+      
+      {historyReservations.length > 5 && (
+        <a 
+          href="/history" 
+          class="text-sm text-primary hover:text-primary-dark dark:text-blue-400 dark:hover:text-blue-300"
+        >
+          Ver todo
+        </a>
+      )}
+    </div>
+    
+    {historyReservations.length > 0 ? (
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead class="bg-gray-50 dark:bg-gray-700">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Servicio</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Representante</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Fecha</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Estado</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            {historyReservations.slice(0, 5).map((reservation) => {
+              const statusInfo = getStatusInfo(reservation.status);
+              
+              return (
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-gray-900 dark:text-white">{reservation.services?.name || 'Servicio no especificado'}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <div class="flex-shrink-0 h-10 w-10 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
+                        <img 
+                          class="h-10 w-10 object-cover" 
+                          src={reservation.profiles?.avatar_url || "/avatars/default.jpg"} 
+                          alt="" 
+                          onerror="this.src='/avatars/default.jpg'; this.onerror=null;"
+                        />
+                      </div>
+                      <div class="ml-4">
+                        <div class="text-sm font-medium text-gray-900 dark:text-white">{reservation.profiles?.name || 'Representante no especificado'}</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">
+                          {reservation.profiles?.rating ? (
+                            <div class="flex items-center">
+                              <svg class="h-4 w-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                              </svg>
+                              <span class="ml-1">{reservation.profiles.rating}</span>
+                            </div>
+                          ) : (
+                            <span>Sin valoraciones</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900 dark:text-white">{formatDate(reservation.date)}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-${statusInfo.color}-100 text-${statusInfo.color}-800 dark:bg-${statusInfo.color}-900 dark:text-${statusInfo.color}-200`}>
+                      {statusInfo.text}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <a 
+                      href={`/reservation/${reservation.id}`} 
+                      class="text-primary hover:text-primary-dark dark:text-blue-400 dark:hover:text-blue-300"
+                    >
+                      Ver detalles
+                    </a>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    ) : (
+      <div class="py-8 text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400 dark:text-gray-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">Aún no tienes historial de reservas</h3>
+        <p class="text-gray-500 dark:text-gray-400">Tu historial aparecerá aquí una vez que completes o canceles reservas</p>
+      </div>
+    )}
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Manejar botones de cancelación de reserva
+  const cancelButtons = document.querySelectorAll('.cancel-reservation');
+  
+  cancelButtons.forEach(button => {
+    button.addEventListener('click', async function() {
+      if (!confirm('¿Estás seguro de que deseas cancelar esta reserva?')) {
+        return;
+      }
+      
+      const reservationId = this.getAttribute('data-reservation-id');
+      
+      try {
+        const response = await fetch('/api/update-reservation-status', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: reservationId,
+            status: 'cancelled',
+          }),
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        
+        // Mostrar mensaje de éxito
+        alert('Reserva cancelada correctamente');
+        
+        // Recargar la página para ver los cambios
+        window.location.reload();
+      } catch (error) {
+        console.error('Error al cancelar reserva:', error);
+        alert('Error al cancelar reserva: ' + error.message);
+      }
+    });
+  });
+});
+</script> 

@@ -6,6 +6,9 @@ import { getSession, createReservation } from '../../lib/supabase.ts';
  */
 export const POST = async ({ request }) => {
   try {
+    // Obtener la URL base de la solicitud actual
+    const baseUrl = new URL(request.url).origin;
+
     // Verificar autenticación
     const { data: { session }, error: authError } = await supabase.auth.getSession();
     
@@ -19,57 +22,80 @@ export const POST = async ({ request }) => {
       );
     }
     
-    // Obtener datos de la reserva
-    const data = await request.json();
+    // Obtener datos del formulario
+    const formData = await request.formData();
+    const data = {
+      queuer_id: formData.get('queuer_id'),
+      service_id: formData.get('service_id'),
+      date: formData.get('date'),
+      location: formData.get('location'),
+      details: formData.get('details'),
+      redirect_url: formData.get('redirect_url')
+    };
+
+    // Función auxiliar para crear URLs de redirección
+    const createRedirectUrl = (path, params) => {
+      const url = new URL(path, baseUrl);
+      for (const [key, value] of Object.entries(params)) {
+        url.searchParams.set(key, value);
+      }
+      return url.toString();
+    };
+
+    // Decodificar los IDs que vienen codificados del formulario
+    try {
+      data.queuer_id = decodeURIComponent(data.queuer_id);
+      data.service_id = decodeURIComponent(data.service_id);
+      data.redirect_url = decodeURIComponent(data.redirect_url);
+    } catch (e) {
+      console.error('Error decodificando IDs:', e);
+      return new Response(null, {
+        status: 302,
+        headers: {
+          'Location': createRedirectUrl(data.redirect_url, {
+            reserved: 'error',
+            message: 'Error en los datos del formulario'
+          })
+        }
+      });
+    }
+    
+    // Obtener el ID del cliente desde el perfil del usuario actual
+    const { data: clientProfile, error: clientProfileError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('user_id', session.user.id)
+      .single();
+    
+    if (clientProfileError || !clientProfile) {
+      console.error('Error obteniendo perfil del cliente:', clientProfileError);
+      return new Response(null, {
+        status: 302,
+        headers: {
+          'Location': createRedirectUrl(data.redirect_url, {
+            reserved: 'error',
+            message: 'Error al obtener el perfil del cliente'
+          })
+        }
+      });
+    }
+    
+    data.client_id = clientProfile.id;
     
     // Validar campos requeridos
     const requiredFields = ['client_id', 'queuer_id', 'service_id', 'date', 'location'];
     const missingFields = requiredFields.filter(field => !data[field]);
     
     if (missingFields.length > 0) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: `Faltan campos requeridos: ${missingFields.join(', ')}`,
-        }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    // Validar que el cliente sea el usuario autenticado o un administrador
-    const { data: clientProfile, error: clientError } = await supabase
-      .from('profiles')
-      .select('user_id')
-      .eq('id', data.client_id)
-      .single();
-    
-    if (clientError || !clientProfile) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: 'No se encontró el perfil del cliente',
-        }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    if (clientProfile.user_id !== session.user.id) {
-      // Verificar si el usuario es admin
-      const { data: userProfile, error: userProfileError } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('user_id', session.user.id)
-        .single();
-      
-      if (userProfileError || !userProfile || !userProfile.is_admin) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            message: 'No tienes permiso para crear esta reserva',
-          }),
-          { status: 403, headers: { 'Content-Type': 'application/json' } }
-        );
-      }
+      return new Response(null, {
+        status: 302,
+        headers: {
+          'Location': createRedirectUrl(data.redirect_url, {
+            reserved: 'error',
+            message: `Faltan campos requeridos: ${missingFields.join(', ')}`
+          })
+        }
+      });
     }
     
     // Validar que el representante exista
@@ -81,13 +107,15 @@ export const POST = async ({ request }) => {
       .single();
     
     if (queuerError || !queuerProfile) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: 'El representante seleccionado no existe',
-        }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
-      );
+      return new Response(null, {
+        status: 302,
+        headers: {
+          'Location': createRedirectUrl(data.redirect_url, {
+            reserved: 'error',
+            message: 'El representante seleccionado no existe'
+          })
+        }
+      });
     }
     
     // Validar que el servicio exista
@@ -98,13 +126,15 @@ export const POST = async ({ request }) => {
       .single();
     
     if (serviceError || !service) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: 'El servicio seleccionado no existe',
-        }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
-      );
+      return new Response(null, {
+        status: 302,
+        headers: {
+          'Location': createRedirectUrl(data.redirect_url, {
+            reserved: 'error',
+            message: 'El servicio seleccionado no existe'
+          })
+        }
+      });
     }
     
     // Crear la reserva
@@ -127,14 +157,15 @@ export const POST = async ({ request }) => {
     
     if (reservationError) {
       console.error('Error al crear la reserva:', reservationError);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: 'Error al crear la reserva',
-          error: reservationError.message,
-        }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
+      return new Response(null, {
+        status: 302,
+        headers: {
+          'Location': createRedirectUrl(data.redirect_url, {
+            reserved: 'error',
+            message: 'Error al crear la reserva'
+          })
+        }
+      });
     }
     
     // Obtener información adicional para la notificación
@@ -165,23 +196,28 @@ export const POST = async ({ request }) => {
       ]);
     }
     
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: 'Reserva creada con éxito',
-        data: reservation,
-      }),
-      { status: 201, headers: { 'Content-Type': 'application/json' } }
-    );
+    // Redirigir con mensaje de éxito
+    return new Response(null, {
+      status: 302,
+      headers: {
+        'Location': createRedirectUrl(data.redirect_url, {
+          reserved: 'success'
+        })
+      }
+    });
+    
   } catch (error) {
     console.error('Error en el endpoint de reservas:', error);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        message: 'Error interno del servidor',
-      }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    const redirectUrl = new URL(request.url).searchParams.get('redirect_url') || '/queuers';
+    return new Response(null, {
+      status: 302,
+      headers: {
+        'Location': createRedirectUrl(redirectUrl, {
+          reserved: 'error',
+          message: 'Error interno del servidor'
+        })
+      }
+    });
   }
 }
 

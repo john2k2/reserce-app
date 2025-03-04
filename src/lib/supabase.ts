@@ -59,28 +59,58 @@ export async function signOut() {
 }
 
 /**
- * Get the current authenticated user
- */
-export async function getCurrentUser() {
-  const { data, error } = await supabase.auth.getUser();
-  return { data, error };
-}
-
-/**
- * Get the current authenticated session
+ * Obtiene la sesión actual del usuario
+ * @returns Objeto con los datos de la sesión
  */
 export async function getSession() {
   try {
     const { data, error } = await supabase.auth.getSession();
+    
     if (error) {
-      console.error('Error getting session:', error.message);
+      console.error('Error al obtener la sesión:', error);
       return { data: null, error };
     }
+    
+    // Guardar estado de la sesión en una cookie para que persista
+    if (data.session) {
+      // No exponemos el token completo, solo un indicador de que el usuario está autenticado
+      return { 
+        data: {
+          session: {
+            user: {
+              id: data.session.user.id,
+              email: data.session.user.email,
+              user_metadata: data.session.user.user_metadata
+            }
+          }
+        }, 
+        error: null 
+      };
+    }
+    
     return { data, error: null };
-  } catch (err) {
-    console.error('Unexpected error getting session:', err);
-    return { data: null, error: err };
+  } catch (e) {
+    console.error('Error inesperado al obtener la sesión:', e);
+    return { data: null, error: e };
   }
+}
+
+/**
+ * Verifica si el usuario está autenticado
+ * @returns Booleano indicando si está autenticado
+ */
+export async function isAuthenticated() {
+  const { data } = await getSession();
+  return !!data?.session;
+}
+
+/**
+ * Obtiene el usuario actual
+ * @returns Datos del usuario actual
+ */
+export async function getCurrentUser() {
+  const { data } = await getSession();
+  return data?.session?.user || null;
 }
 
 // Profile Management
@@ -311,16 +341,43 @@ export async function getServices() {
 }
 
 /**
- * Get a service by ID
+ * Get a service by ID or code
  */
-export async function getServiceById(serviceId: string) {
-  const { data, error } = await supabase
-    .from('services')
-    .select('*')
-    .eq('id', serviceId)
-    .single();
-  
-  return { data, error };
+export async function getServiceById(serviceIdOrCode: string) {
+  try {
+    // Verificar si el parámetro es un UUID
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(serviceIdOrCode);
+    
+    let query;
+    
+    if (isUUID) {
+      // Si es un UUID, buscar directamente por ID
+      query = supabase
+        .from('services')
+        .select('*')
+        .eq('id', serviceIdOrCode)
+        .single();
+    } else {
+      // Si es un código simple, buscar por código
+      query = supabase
+        .from('services')
+        .select('*')
+        .eq('code', serviceIdOrCode)
+        .single();
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error(`Error al obtener servicio por ${isUUID ? 'UUID' : 'código'}:`, error);
+      return { data: null, error };
+    }
+    
+    return { data, error: null };
+  } catch (e) {
+    console.error('Error inesperado al obtener servicio:', e);
+    return { data: null, error: e };
+  }
 }
 
 /**
@@ -330,12 +387,40 @@ export async function getAllQueuerServices() {
   try {
     const { data, error } = await supabase
       .from('services')
-      .select('*')
+      .select('id, name, description, code, category')
       .order('name');
     
-    return { data, error };
+    if (error) {
+      console.error('Error al obtener todos los servicios:', error);
+      return { data: null, error };
+    }
+    
+    return { data, error: null };
   } catch (e) {
-    console.error('Error al obtener todos los servicios:', e);
+    console.error('Error inesperado al obtener todos los servicios:', e);
+    return { data: null, error: e };
+  }
+}
+
+/**
+ * Get a service specifically by its code
+ */
+export async function getServiceByCode(code: string) {
+  try {
+    const { data, error } = await supabase
+      .from('services')
+      .select('*')
+      .eq('code', code)
+      .single();
+    
+    if (error) {
+      console.error('Error al obtener servicio por código:', error);
+      return { data: null, error };
+    }
+    
+    return { data, error: null };
+  } catch (e) {
+    console.error('Error inesperado al obtener servicio por código:', e);
     return { data: null, error: e };
   }
 }

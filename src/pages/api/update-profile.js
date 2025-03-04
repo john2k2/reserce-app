@@ -1,107 +1,132 @@
-import { updateProfile } from '../../lib/supabase.ts';
-import { getSession } from '../../lib/supabase.ts';
+import { getSession, supabase } from '../../lib/supabase.ts';
 
 // Endpoint para actualizar el perfil del usuario
-export const PATCH = async ({ request }) => {
+export async function post({ request }) {
+  // Verificar autenticación
+  const { data: sessionData, error: sessionError } = await getSession();
+  
+  if (sessionError || !sessionData?.session) {
+    return new Response(
+      JSON.stringify({
+        error: 'No autorizado. Debes iniciar sesión para actualizar tu perfil.'
+      }),
+      {
+        status: 401,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+  }
+  
+  const userId = sessionData.session.user.id;
+  
   try {
-    // Verificar si el usuario está autenticado
-    const { data: sessionData, error: sessionError } = await getSession();
+    // Si hay un archivo de avatar, procesarlo primero
+    const formData = await request.formData();
+    const avatar = formData.get('avatar');
+    const profileId = formData.get('id');
     
-    if (sessionError || !sessionData.session) {
+    // Verificar que el usuario está actualizando su propio perfil
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('user_id')
+      .eq('id', profileId)
+      .single();
+    
+    if (profileData?.user_id !== userId) {
       return new Response(
         JSON.stringify({
-          success: false,
-          message: 'No hay una sesión activa. Por favor, inicie sesión.',
+          error: 'No tienes permiso para actualizar este perfil'
         }),
         {
-          status: 401,
+          status: 403,
           headers: {
-            'Content-Type': 'application/json',
-          },
+            'Content-Type': 'application/json'
+          }
         }
       );
     }
     
-    // Obtener los datos enviados
-    const body = await request.json();
+    // Preparar datos para actualizar
+    const updateData = {
+      name: formData.get('name'),
+      email: formData.get('email'),
+      phone: formData.get('phone') || null,
+      city: formData.get('city') || null,
+      description: formData.get('description') || null,
+      updated_at: new Date().toISOString()
+    };
     
-    // Verificar que se proporcione el ID del perfil
-    if (!body.id) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: 'Es necesario proporcionar el ID del perfil.',
-        }),
-        {
-          status: 400,
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+    // Si se proporciona un nuevo avatar, subirlo al almacenamiento
+    let avatarUrl = null;
+    if (avatar && avatar.size > 0) {
+      const fileExt = avatar.name.split('.').pop();
+      const fileName = `${userId}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      
+      // Subir archivo a Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, avatar, {
+          cacheControl: '3600',
+          upsert: false
+        });
+      
+      if (uploadError) {
+        throw new Error(`Error al subir avatar: ${uploadError.message}`);
+      }
+      
+      // Obtener URL pública
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+      
+      avatarUrl = urlData?.publicUrl;
+      
+      // Agregar URL del avatar a los datos a actualizar
+      if (avatarUrl) {
+        updateData.avatar_url = avatarUrl;
+      }
     }
     
-    // Preparar los datos para actualizar
-    const updates = { ...body };
-    
-    // Eliminar campos que no se deben actualizar
-    delete updates.id; // El ID se usa para la consulta, no para la actualización
-    delete updates.user_id; // No permitimos cambiar el ID de usuario
-    delete updates.user_type; // No permitimos cambiar el tipo de usuario
-    delete updates.created_at; // No permitimos cambiar la fecha de creación
-    delete updates.is_admin; // No permitimos cambiar el estado de administrador
-    delete updates.is_verified; // La verificación se hace por procesos admin
-    delete updates.rating; // El rating se actualiza a través de reseñas
-    delete updates.completed_queues; // Se actualiza automáticamente al completar reservas
-    
-    // Actualizar el perfil usando la función helper
-    const { data, error } = await updateProfile(body.id, updates);
+    // Actualizar perfil en la base de datos
+    const { data, error } = await supabase
+      .from('profiles')
+      .update(updateData)
+      .eq('id', profileId);
     
     if (error) {
-      console.error('Error al actualizar el perfil:', error);
-      
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: error.message || 'Error al actualizar el perfil. Por favor, inténtalo de nuevo.',
-        }),
-        {
-          status: 500,
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      throw new Error(`Error al actualizar perfil: ${error.message}`);
     }
     
-    // Actualización exitosa
     return new Response(
       JSON.stringify({
         success: true,
         message: 'Perfil actualizado correctamente',
-        profile: data,
+        data: {
+          ...updateData,
+          id: profileId
+        }
       }),
       {
         status: 200,
         headers: {
-          'Content-Type': 'application/json',
-        },
+          'Content-Type': 'application/json'
+        }
       }
     );
-    
   } catch (error) {
-    console.error('Error en el endpoint de actualización de perfil:', error);
+    console.error('Error en update-profile:', error);
     
     return new Response(
       JSON.stringify({
-        success: false,
-        message: 'Error interno del servidor. Por favor, inténtalo de nuevo más tarde.',
+        error: error.message || 'Error al actualizar el perfil'
       }),
       {
         status: 500,
         headers: {
-          'Content-Type': 'application/json',
-        },
+          'Content-Type': 'application/json'
+        }
       }
     );
   }

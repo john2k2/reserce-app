@@ -1,0 +1,190 @@
+---
+import type { Profile } from '../../types/database.types';
+
+interface Props {
+  profile: Profile;
+}
+
+const { profile } = Astro.props;
+---
+
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+  <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Mi Información Personal</h2>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Actualiza tus datos personales</p>
+  </div>
+  
+  <div class="p-6">
+    <form id="client-profile-form" class="space-y-6">
+      <input type="hidden" id="profile-id" name="id" value={profile?.id} />
+      
+      <!-- Sección de Foto de Perfil -->
+      <div class="flex flex-col md:flex-row items-center gap-6 pb-6 border-b border-gray-200 dark:border-gray-700">
+        <div class="w-32 h-32 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0">
+          <img 
+            id="preview-avatar" 
+            src={profile?.avatar_url || "/avatars/default.jpg"} 
+            alt="Foto de perfil" 
+            class="w-full h-full object-cover"
+            onerror="this.src='/avatars/default.jpg'; this.onerror=null;"
+          />
+        </div>
+        
+        <div class="flex flex-col gap-3">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Cambiar foto de perfil
+          </label>
+          <input 
+            type="file" 
+            id="avatar-upload" 
+            name="avatar" 
+            accept="image/*"
+            class="block w-full text-sm text-gray-500 dark:text-gray-400
+                   file:mr-4 file:py-2 file:px-4
+                   file:rounded-md file:border-0
+                   file:text-sm file:font-medium
+                   file:bg-primary file:text-white
+                   hover:file:bg-primary-dark"
+          />
+          <p class="text-xs text-gray-500 dark:text-gray-400">PNG, JPG o GIF. Máximo 2MB.</p>
+        </div>
+      </div>
+      
+      <!-- Información personal -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Nombre completo
+          </label>
+          <input 
+            type="text" 
+            id="name" 
+            name="name" 
+            value={profile?.name || ''}
+            required
+            class="mt-1 focus:ring-primary focus:border-primary block w-full shadow-sm sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+          />
+        </div>
+        
+        <div>
+          <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Correo electrónico
+          </label>
+          <input 
+            type="email" 
+            id="email" 
+            name="email" 
+            value={profile?.email || ''}
+            required
+            class="mt-1 focus:ring-primary focus:border-primary block w-full shadow-sm sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+          />
+        </div>
+        
+        <div>
+          <label for="phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Teléfono
+          </label>
+          <input 
+            type="tel" 
+            id="phone" 
+            name="phone" 
+            value={profile?.phone || ''}
+            class="mt-1 focus:ring-primary focus:border-primary block w-full shadow-sm sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+          />
+        </div>
+        
+        <div>
+          <label for="city" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Ciudad
+          </label>
+          <input 
+            type="text" 
+            id="city" 
+            name="city" 
+            value={profile?.city || ''}
+            class="mt-1 focus:ring-primary focus:border-primary block w-full shadow-sm sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Descripción personal (opcional)
+        </label>
+        <textarea 
+          id="description" 
+          name="description" 
+          rows="4"
+          class="mt-1 focus:ring-primary focus:border-primary block w-full shadow-sm sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+        >{profile?.description || ''}</textarea>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          Escribe una breve descripción sobre ti. Esto ayudará a los representantes a conocerte mejor.
+        </p>
+      </div>
+      
+      <div class="flex justify-end">
+        <button 
+          type="submit" 
+          class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+        >
+          Guardar cambios
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// Script para manejar la subida de avatar y la vista previa
+document.addEventListener('DOMContentLoaded', function() {
+  const avatarUpload = document.getElementById('avatar-upload');
+  const previewAvatar = document.getElementById('preview-avatar');
+  const profileForm = document.getElementById('client-profile-form');
+
+  // Vista previa de la imagen
+  if (avatarUpload && previewAvatar) {
+    avatarUpload.addEventListener('change', function(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          previewAvatar.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  // Manejar el envío del formulario
+  if (profileForm) {
+    profileForm.addEventListener('submit', async function(event) {
+      event.preventDefault();
+      
+      const formData = new FormData(profileForm);
+      const profileId = formData.get('id');
+      
+      try {
+        const response = await fetch('/api/update-profile', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        
+        // Mostrar mensaje de éxito
+        alert('Perfil actualizado correctamente');
+        
+        // Recargar la página para ver los cambios
+        window.location.reload();
+      } catch (error) {
+        console.error('Error al actualizar perfil:', error);
+        alert('Error al actualizar perfil: ' + error.message);
+      }
+    });
+  }
+});
+</script> 

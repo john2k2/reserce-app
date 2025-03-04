@@ -1,0 +1,126 @@
+---
+interface Props {
+  cities: string[];
+  services: {
+    id: string;
+    name: string;
+    description?: string | null;
+  }[];
+  currentFilters: {
+    search?: string;
+    city?: string;
+    service?: string;
+    sortBy?: string;
+  };
+}
+
+const { cities, services, currentFilters } = Astro.props;
+---
+
+<div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-8">
+  <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Filtrar representantes</h2>
+  
+  <form id="queuer-search-form" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <!-- Búsqueda por nombre/especialidad -->
+    <div>
+      <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        Buscar
+      </label>
+      <div class="relative">
+        <input
+          type="text"
+          id="search"
+          name="q"
+          value={currentFilters.search || ''}
+          placeholder="Nombre o especialidad..."
+          class="focus:ring-primary focus:border-primary block w-full pr-10 sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+        />
+        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Filtrado por ciudad -->
+    <div>
+      <label for="city" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        Ciudad
+      </label>
+      <select
+        id="city"
+        name="city"
+        class="focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+      >
+        <option value="">Todas las ciudades</option>
+        {cities.map((city) => (
+          <option value={city} selected={currentFilters.city === city}>{city}</option>
+        ))}
+      </select>
+    </div>
+    
+    <!-- Filtrado por servicio -->
+    <div>
+      <label for="service" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        Servicio
+      </label>
+      <select
+        id="service"
+        name="service"
+        class="focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+      >
+        <option value="">Todos los servicios</option>
+        {services.map((service) => (
+          <option value={service.code} selected={currentFilters.service === service.code}>{service.name}</option>
+        ))}
+      </select>
+    </div>
+    
+    <!-- Ordenamiento -->
+    <div>
+      <label for="sort" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        Ordenar por
+      </label>
+      <select
+        id="sort"
+        name="sort"
+        class="focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+      >
+        <option value="rating" selected={currentFilters.sortBy === 'rating' || !currentFilters.sortBy}>Mejor valoración</option>
+        <option value="completed" selected={currentFilters.sortBy === 'completed'}>Más experiencia</option>
+        <option value="rate_asc" selected={currentFilters.sortBy === 'rate_asc'}>Precio: menor a mayor</option>
+        <option value="rate_desc" selected={currentFilters.sortBy === 'rate_desc'}>Precio: mayor a menor</option>
+      </select>
+    </div>
+    
+    <!-- Botón de búsqueda -->
+    <div class="md:col-span-4 flex justify-end mt-2">
+      <button
+        type="submit"
+        class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        Buscar
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const searchForm = document.getElementById('queuer-search-form');
+  
+  if (searchForm) {
+    // Auto-submit on select change
+    const selectElements = searchForm.querySelectorAll('select');
+    selectElements.forEach(select => {
+      select.addEventListener('change', () => {
+        searchForm.submit();
+      });
+    });
+  }
+});
+</script> 

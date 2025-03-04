@@ -115,6 +115,28 @@ import Layout from '../layouts/Layout.astro';
     const urlParams = new URLSearchParams(window.location.search);
     const redirectUrl = urlParams.get('redirect') || '/dashboard';
     
+    console.log('URL de redirección después del login:', redirectUrl);
+    
+    // Verificar si ya hay una sesión activa
+    async function checkSession() {
+      try {
+        const response = await fetch('/api/auth-status');
+        const data = await response.json();
+        
+        if (data.authenticated) {
+          console.log('Usuario ya autenticado, redirigiendo...');
+          window.location.href = redirectUrl;
+          return true;
+        }
+      } catch (error) {
+        console.error('Error al verificar sesión:', error);
+      }
+      return false;
+    }
+    
+    // Verificar sesión al cargar la página
+    checkSession();
+    
     loginForm?.addEventListener('submit', async function(e) {
       e.preventDefault();
       
@@ -146,8 +168,13 @@ import Layout from '../layouts/Layout.astro';
           return;
         }
         
-        // Inicio de sesión exitoso - redirigir a la URL especificada o al dashboard por defecto
-        window.location.href = redirectUrl;
+        console.log('Inicio de sesión exitoso, redirigiendo a:', redirectUrl);
+        
+        // Pequeño retraso para permitir que la sesión se establezca correctamente
+        setTimeout(() => {
+          // Inicio de sesión exitoso - redirigir a la URL especificada o al dashboard por defecto
+          window.location.href = redirectUrl;
+        }, 300);
       } catch (error) {
         console.error('Error durante el inicio de sesión:', error);
         

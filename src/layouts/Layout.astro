@@ -13,6 +13,11 @@ const { title } = Astro.props;
 const { data: sessionData } = await getSession();
 const session = sessionData?.session;
 const isAuthenticated = !!session;
+const userId = session?.user?.id || null;
+
+// Configuración de Supabase para cliente
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 
 // Definir la interfaz para los recursos críticos
 interface CriticalResource {
@@ -36,6 +41,15 @@ const criticalResources: CriticalResource[] = [
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
 		<title>{title}</title>
+		
+		<!-- Estado de autenticación disponible para el cliente, pero solo como indicador -->
+		<script define:vars={{ isAuthenticated, userId }}>
+			window.AUTH_STATE = {
+				isAuthenticated: !!isAuthenticated,
+				userId: userId || null
+			};
+		</script>
+		
 		<script is:inline>
 			// Script para manejar el cambio de tema
 			const theme = (() => {
@@ -102,7 +116,6 @@ const criticalResources: CriticalResource[] = [
 				// Inicializar funcionalidades
 				setupThemeToggle();
 				setupUserMenu();
-				setupLogoutButton();
 				
 				// Función para alternar el tema claro/oscuro
 				function setupThemeToggle() {
@@ -133,34 +146,6 @@ const criticalResources: CriticalResource[] = [
 							}
 						});
 					}
-				}
-				
-				function setupLogoutButton() {
-					// Buscar todos los enlaces de cierre de sesión
-					const logoutLinks = document.querySelectorAll('a[href="/api/logout"]');
-					
-					logoutLinks.forEach(link => {
-						link.addEventListener('click', async function(e) {
-							e.preventDefault();
-							
-							try {
-								const response = await fetch('/api/logout', {
-									method: 'POST',
-									headers: {
-										'Content-Type': 'application/json'
-									}
-								});
-								
-								if (response.ok) {
-									window.location.href = '/';
-								} else {
-									console.error('Error al cerrar sesión');
-								}
-							} catch (error) {
-								console.error('Error al cerrar sesión:', error);
-							}
-						});
-					});
 				}
 			});
 		</script>

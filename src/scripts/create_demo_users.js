@@ -24,7 +24,67 @@ if (!supabaseUrl || !supabaseServiceKey) {
 // Cliente de Supabase con credenciales de admin
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-
+// Usuarios de prueba
+const demoUsers = [
+  // Cliente
+  {
+    email: 'cliente@ejemplo.com',
+    password: 'Cliente123!',
+    name: 'Carlos Cliente',
+    user_type: 'client',
+    city: 'Madrid',
+    phone: '+34600111222',
+    avatar_url: 'https://randomuser.me/api/portraits/men/1.jpg',
+  },
+  // Representantes
+  {
+    email: 'rep1@ejemplo.com',
+    password: 'Representante1!',
+    name: 'Ana Representante',
+    user_type: 'queuer',
+    city: 'Barcelona',
+    phone: '+34600333444',
+    avatar_url: 'https://randomuser.me/api/portraits/women/2.jpg',
+    speciality: 'Trámites bancarios',
+    rate_per_hour: 20,
+    description: 'Especialista en trámites bancarios y gestiones financieras.',
+  },
+  {
+    email: 'rep2@ejemplo.com',
+    password: 'Representante2!',
+    name: 'Pablo Gestor',
+    user_type: 'queuer',
+    city: 'Valencia',
+    phone: '+34600555666',
+    avatar_url: 'https://randomuser.me/api/portraits/men/3.jpg',
+    speciality: 'Gestiones administrativas',
+    rate_per_hour: 18,
+    description: 'Experto en todo tipo de gestiones administrativas y documentación oficial.',
+  },
+  {
+    email: 'rep3@ejemplo.com',
+    password: 'Representante3!',
+    name: 'Laura Gestora',
+    user_type: 'queuer',
+    city: 'Sevilla',
+    phone: '+34600777888',
+    avatar_url: 'https://randomuser.me/api/portraits/women/4.jpg',
+    speciality: 'Trámites jurídicos',
+    rate_per_hour: 25,
+    description: 'Especializada en trámites y gestiones jurídicas de todo tipo.',
+  },
+  // Administrador
+  {
+    email: 'admin@ejemplo.com',
+    password: 'Admin123!',
+    name: 'Admin Sistema',
+    user_type: 'admin',
+    city: 'Madrid',
+    phone: '+34600999000',
+    avatar_url: 'https://randomuser.me/api/portraits/men/5.jpg',
+    is_admin: true,
+  },
+];
 
 /**
  * Crea un usuario en Supabase Auth y su perfil correspondiente

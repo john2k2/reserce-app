@@ -45,6 +45,39 @@ export const POST = async ({ request }) => {
       );
     }
     
+    if (!data || !data.user || !data.session) {
+      console.error('Sesión o usuario no disponible en la respuesta');
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: 'Error al iniciar sesión. No se pudo crear la sesión.',
+        }),
+        {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+    }
+    
+    // Establecer la cookie para asegurar que la sesión persista entre navegación
+    const cookieOptions = [
+      `sb-access-token=${data.session.access_token}`,
+      `path=/`,
+      `max-age=${60 * 60 * 24 * 7}`, // 7 días
+      `SameSite=Lax`
+    ];
+    
+    // Verificar si estamos en un entorno seguro para añadir la bandera Secure
+    // En producción, esto dependerá de tu configuración de despliegue
+    const isSecure = request.headers.get('x-forwarded-proto') === 'https' || 
+                     request.url.startsWith('https://');
+    
+    if (isSecure) {
+      cookieOptions.push('Secure');
+    }
+    
     // Inicio de sesión exitoso
     return new Response(
       JSON.stringify({
@@ -53,8 +86,6 @@ export const POST = async ({ request }) => {
         user: {
           id: data.user.id,
           email: data.user.email,
-          // Si necesitas más datos del usuario, podrías hacer una consulta adicional
-          // a la tabla de perfiles para obtener información como el tipo de usuario
         },
         session: {
           access_token: data.session.access_token,
@@ -65,6 +96,7 @@ export const POST = async ({ request }) => {
         status: 200,
         headers: {
           'Content-Type': 'application/json',
+          'Set-Cookie': cookieOptions.join('; ')
         },
       }
     );

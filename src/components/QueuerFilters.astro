@@ -31,9 +31,9 @@ const cityOptions = [
 const serviceOptions = [
   { value: '', label: 'Todos los servicios' },
   ...services.map(serviceItem => ({
-    value: serviceItem.id,
+    value: serviceItem.code || serviceItem.id,
     label: serviceItem.name,
-    selected: service === serviceItem.id
+    selected: service === (serviceItem.code || serviceItem.id)
   }))
 ];
 

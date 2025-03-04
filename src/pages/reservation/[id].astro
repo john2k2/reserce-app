@@ -1,18 +1,24 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { supabase } from '../../lib/supabase.ts';
-import { getReservationById, updateReservationStatus } from '../../lib/supabase.ts';
+import { supabase, getSession, getReservationById, updateReservationStatus } from '../../lib/supabase.ts';
 import type { ReservationStatus } from '../../types/database.types';
 
 // Obtener ID de la reserva
 const { id } = Astro.params;
 
-// Verificar si el usuario está autenticado
-const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+// Verificar si el usuario está autenticado usando la función mejorada
+const { data: sessionData, error: sessionError } = await getSession();
+const session = sessionData?.session;
+
+// Registrar información para depuración
+console.log('Estado de sesión:', !!session, 'Error de sesión:', !!sessionError);
 
 // Redireccionar si no hay sesión
 if (!session) {
-  return Astro.redirect(`/login?redirect=/reservation/${id}`);
+  console.log('No hay sesión activa, redirigiendo al login');
+  // Guardar la URL actual para redirigir después del login exitoso
+  const redirectUrl = `/reservation/${id}`;
+  return Astro.redirect(`/login?redirect=${encodeURIComponent(redirectUrl)}`);
 }
 
 // Obtener datos de la reserva

@@ -1,0 +1,279 @@
+---
+import AppLayout from '../layouts/AppLayout.astro';
+import { getSession, getProfileByUserId, getClientReservations } from '../lib/supabase.ts';
+import type { Profile, Reservation, ReservationStatus } from '../types/database.types';
+import { formatDate } from '../utils/dateUtils.ts';
+
+// Definir interfaz para las reservas con todos los campos necesarios
+interface ExtendedReservation {
+  id: string;
+  status: ReservationStatus;
+  client_id: string;
+  queuer_id: string;
+  service_id: string;
+  date: string;
+  client_rating?: number | null;
+  client_review?: string | null;
+  total_amount?: number | null;
+  queuer_notes?: string | null;
+  location?: string;
+  details?: string;
+  created_at: string;
+  services?: {
+    id: string;
+    name: string;
+    description?: string;
+  };
+  'profiles!reservations_queuer_id_fkey'?: {
+    id: string;
+    name: string;
+    avatar_url?: string;
+    rating?: number;
+  };
+}
+
+// Verificar autenticación del usuario
+const { data: sessionData } = await getSession();
+const session = sessionData?.session;
+
+// Redireccionar a login si no hay sesión
+if (!session) {
+  return Astro.redirect('/login?redirect=/my-reservations');
+}
+
+// Definir categorías para organizar reservas
+const categories = {
+  pending: { title: 'Pendientes', icon: 'clock' },
+  confirmed: { title: 'Confirmadas', icon: 'check-circle' },
+  in_progress: { title: 'En Progreso', icon: 'loader' },
+  completed: { title: 'Completadas', icon: 'check-square' },
+  cancelled: { title: 'Canceladas', icon: 'x-circle' }
+};
+
+// Obtener el perfil y las reservas del usuario
+const userId = session.user.id;
+const { data: profileData } = await getProfileByUserId(userId);
+const { data: allReservationsData, error } = await getClientReservations(userId);
+
+// Convertir las reservas al tipo extendido
+const allReservations = allReservationsData as unknown as ExtendedReservation[] | null;
+
+// Organizar reservas por estado
+const reservations: Record<string, ExtendedReservation[]> = {
+  pending: [],
+  confirmed: [],
+  in_progress: [],
+  completed: [],
+  cancelled: []
+};
+
+// Si hay datos, organizarlos por estado
+if (allReservations) {
+  allReservations.forEach(reservation => {
+    if (reservation.status in reservations) {
+      reservations[reservation.status].push(reservation);
+    }
+  });
+}
+
+// Formatear fechas para mostrar
+const formatReservationDate = (dateString: string) => {
+  return formatDate(new Date(dateString), { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric'
+  });
+};
+---
+
+<AppLayout title="Mis Reservas | QueueMaster">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Mis Reservas</h1>
+    <p class="text-gray-600 dark:text-gray-400">Gestiona tus solicitudes de reserva y revisa su estado actual</p>
+  </div>
+
+  {error && (
+    <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-red-800 dark:text-red-200">Error al cargar tus reservas</h3>
+          <div class="mt-2 text-sm text-red-700 dark:text-red-300">
+            <p>No pudimos cargar tus reservas en este momento. Por favor, intenta de nuevo más tarde.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {!error && allReservations && allReservations.length === 0 && (
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 text-center">
+      <div class="py-6">
+        <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+        <h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-gray-100">No tienes reservas</h3>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          Todavía no has realizado ninguna solicitud de reserva. 
+        </p>
+        <div class="mt-6">
+          <a href="/" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary dark:focus:ring-blue-500">
+            Explorar servicios
+          </a>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {!error && allReservations && allReservations.length > 0 && (
+    <div class="space-y-6">
+      {Object.entries(categories).map(([status, category]) => {
+        const statusReservations = reservations[status];
+        if (statusReservations.length === 0) return null;
+        
+        return (
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 class="text-lg font-medium text-gray-900 dark:text-white flex items-center">
+                <span class="mr-2">{category.title}</span>
+                <span class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium rounded-full px-2 py-0.5">
+                  {statusReservations.length}
+                </span>
+              </h2>
+            </div>
+            
+            <div class="divide-y divide-gray-200 dark:divide-gray-700">
+              {statusReservations.map((reservation) => {
+                // Obtener información del representante
+                const queuer = reservation['profiles!reservations_queuer_id_fkey'];
+                const service = reservation.services;
+                
+                return (
+                  <div class="p-6">
+                    <div class="flex items-start justify-between flex-wrap gap-4">
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center mb-1">
+                          {queuer && queuer.avatar_url && (
+                            <div class="w-10 h-10 rounded-full overflow-hidden mr-3 bg-gray-200 dark:bg-gray-700">
+                              <img 
+                                src={queuer.avatar_url} 
+                                alt={`Foto de ${queuer.name}`}
+                                class="w-full h-full object-cover"
+                                loading="lazy"
+                                onerror="this.src='/avatars/default.jpg'; this.onerror=null;"
+                              />
+                            </div>
+                          )}
+                          <div>
+                            <h3 class="text-base font-medium text-gray-900 dark:text-white">
+                              {service ? service.name : 'Servicio no especificado'}
+                            </h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                              {queuer ? `Representante: ${queuer.name}` : 'Representante no asignado'}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div class="mt-3 space-y-2">
+                          <p class="text-sm text-gray-700 dark:text-gray-300">
+                            <span class="font-medium">Fecha:</span> {formatReservationDate(reservation.date)}
+                          </p>
+                          
+                          {reservation.location && (
+                            <p class="text-sm text-gray-700 dark:text-gray-300">
+                              <span class="font-medium">Ubicación:</span> {reservation.location}
+                            </p>
+                          )}
+                          
+                          {reservation.details && (
+                            <p class="text-sm text-gray-700 dark:text-gray-300">
+                              <span class="font-medium">Detalles:</span> {reservation.details}
+                            </p>
+                          )}
+                          
+                          <p class="text-sm text-gray-500 dark:text-gray-400">
+                            Creada el {formatDate(new Date(reservation.created_at))}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div class="flex space-x-2">
+                        <a 
+                          href={`/reservation/${reservation.id}`} 
+                          class="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded shadow-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary dark:focus:ring-blue-500"
+                        >
+                          Ver detalles
+                        </a>
+                        
+                        {status === 'pending' && (
+                          <button 
+                            type="button"
+                            data-reservation-id={reservation.id}
+                            class="cancel-reservation-btn inline-flex items-center px-3 py-1.5 border border-red-300 dark:border-red-600 text-sm font-medium rounded shadow-sm text-red-700 dark:text-red-200 bg-white dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:focus:ring-red-500"
+                          >
+                            Cancelar
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  )}
+</AppLayout>
+
+<script>
+  // Función para cancelar reservas
+  async function cancelReservation(reservationId: string): Promise<void> {
+    if (!confirm('¿Estás seguro de que deseas cancelar esta reserva? Esta acción no se puede deshacer.')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/reservation/cancel', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ reservationId })
+      });
+      
+      if (response.ok) {
+        // Recargar la página para reflejar el cambio
+        window.location.reload();
+      } else {
+        const data = await response.json();
+        alert(`Error al cancelar la reserva: ${data.error || 'Error desconocido'}`);
+      }
+    } catch (error) {
+      console.error('Error al cancelar la reserva:', error);
+      alert('No se pudo cancelar la reserva. Por favor, intenta de nuevo más tarde.');
+    }
+  }
+  
+  // Añadir eventos a los botones de cancelar
+  document.addEventListener('DOMContentLoaded', function() {
+    const cancelButtons = document.querySelectorAll<HTMLElement>('.cancel-reservation-btn');
+    
+    cancelButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        const reservationId = this.getAttribute('data-reservation-id');
+        if (reservationId) {
+          cancelReservation(reservationId);
+        }
+      });
+    });
+  });
+</script> 

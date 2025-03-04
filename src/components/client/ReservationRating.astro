@@ -1,0 +1,185 @@
+---
+import type { Reservation } from '../../types/database.types';
+
+interface Props {
+  reservation: Reservation;
+}
+
+const { reservation } = Astro.props;
+---
+
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+  <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Valorar servicio</h2>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Comparte tu experiencia con este representante</p>
+  </div>
+  
+  <div class="p-6">
+    <form id="rating-form" class="space-y-6">
+      <input type="hidden" id="reservation-id" name="reservationId" value={reservation.id} />
+      
+      <div>
+        <label class="block text-lg font-medium text-gray-700 dark:text-gray-300 mb-3">
+          ¿Cómo calificarías el servicio recibido?
+        </label>
+        <div class="flex items-center space-x-2">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button 
+              type="button"
+              class="rating-star p-1 focus:outline-none" 
+              data-rating={star}
+            >
+              <svg class="w-10 h-10 text-gray-300 hover:text-yellow-500 transition-colors" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+              </svg>
+            </button>
+          ))}
+        </div>
+        <input type="hidden" id="rating-value" name="rating" value="" required />
+        <p id="rating-error" class="mt-2 text-sm text-red-600 dark:text-red-400 hidden">Por favor, selecciona una calificación</p>
+      </div>
+      
+      <div>
+        <label for="review" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Tu reseña (opcional)
+        </label>
+        <textarea 
+          id="review" 
+          name="review" 
+          rows="4"
+          placeholder="Comparte tu experiencia con este representante..."
+          class="mt-1 focus:ring-primary focus:border-primary block w-full shadow-sm sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+        ></textarea>
+      </div>
+      
+      <div class="flex justify-end space-x-3">
+        <a 
+          href={`/reservation/${reservation.id}`}
+          class="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:text-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+        >
+          Cancelar
+        </a>
+        <button 
+          type="submit" 
+          class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+        >
+          Enviar valoración
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const ratingStars = document.querySelectorAll('.rating-star');
+  const ratingValue = document.getElementById('rating-value');
+  const ratingError = document.getElementById('rating-error');
+  const ratingForm = document.getElementById('rating-form');
+  
+  // Función para actualizar las estrellas visuales
+  function updateStars(rating) {
+    ratingStars.forEach((star, index) => {
+      const starValue = parseInt(star.getAttribute('data-rating') || '0');
+      if (starValue <= rating) {
+        star.querySelector('svg').classList.remove('text-gray-300');
+        star.querySelector('svg').classList.add('text-yellow-500');
+      } else {
+        star.querySelector('svg').classList.remove('text-yellow-500');
+        star.querySelector('svg').classList.add('text-gray-300');
+      }
+    });
+    
+    // Actualizar el valor del input
+    if (ratingValue) {
+      ratingValue.value = rating.toString();
+    }
+    
+    // Ocultar mensaje de error si se ha seleccionado alguna estrella
+    if (ratingError && rating > 0) {
+      ratingError.classList.add('hidden');
+    }
+  }
+  
+  // Agregar eventos a las estrellas
+  ratingStars.forEach(star => {
+    star.addEventListener('click', function() {
+      const rating = parseInt(this.getAttribute('data-rating') || '0');
+      updateStars(rating);
+    });
+    
+    // Hover effect
+    star.addEventListener('mouseenter', function() {
+      const rating = parseInt(this.getAttribute('data-rating') || '0');
+      ratingStars.forEach((s, index) => {
+        const starValue = parseInt(s.getAttribute('data-rating') || '0');
+        if (starValue <= rating) {
+          s.querySelector('svg').classList.add('text-yellow-400');
+        }
+      });
+    });
+    
+    star.addEventListener('mouseleave', function() {
+      const currentRating = parseInt(ratingValue?.value || '0');
+      ratingStars.forEach((s) => {
+        const starValue = parseInt(s.getAttribute('data-rating') || '0');
+        s.querySelector('svg').classList.remove('text-yellow-400');
+        if (starValue <= currentRating) {
+          s.querySelector('svg').classList.add('text-yellow-500');
+        } else {
+          s.querySelector('svg').classList.add('text-gray-300');
+        }
+      });
+    });
+  });
+  
+  // Manejar el envío del formulario
+  if (ratingForm) {
+    ratingForm.addEventListener('submit', async function(event) {
+      event.preventDefault();
+      
+      // Validar que se haya seleccionado una estrella
+      const rating = parseInt(ratingValue?.value || '0');
+      if (rating === 0) {
+        if (ratingError) {
+          ratingError.classList.remove('hidden');
+        }
+        return;
+      }
+      
+      const formData = new FormData(ratingForm);
+      const reservationId = formData.get('reservationId');
+      const review = formData.get('review');
+      
+      try {
+        const response = await fetch('/api/rate-reservation', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            reservationId: reservationId,
+            rating: rating,
+            review: review
+          }),
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        
+        // Mostrar mensaje de éxito
+        alert('¡Gracias por tu valoración!');
+        
+        // Redireccionar al detalle de la reserva
+        window.location.href = `/reservation/${reservationId}`;
+      } catch (error) {
+        console.error('Error al enviar valoración:', error);
+        alert('Error al enviar valoración: ' + error.message);
+      }
+    });
+  }
+});
+</script> 
