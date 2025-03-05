@@ -277,6 +277,8 @@ export const PATCH = async ({ request, params }) => {
     }
     
     // Obtener la reserva
+    console.log('Buscando reserva con ID:', reservationId);
+    
     const { data: reservation, error: reservationError } = await supabase
       .from('reservations')
       .select(`
@@ -291,18 +293,22 @@ export const PATCH = async ({ request, params }) => {
       .single();
     
     if (reservationError || !reservation) {
+      console.error('Error al buscar la reserva:', reservationError);
       return new Response(
         JSON.stringify({
           success: false,
           message: 'Reserva no encontrada',
+          error: reservationError ? reservationError.message : null
         }),
         { status: 404, headers: { 'Content-Type': 'application/json' } }
       );
     }
     
+    console.log('Reserva encontrada:', reservation);
+    
     // Verificar permisos (cliente, representante o admin)
-    const clientUserId = reservation.profiles.user_id;
-    const queuerUserId = reservation['profiles!reservations_queuer_id_fkey'].user_id;
+    const clientUserId = reservation.profiles?.user_id;
+    const queuerUserId = reservation['profiles!reservations_queuer_id_fkey']?.user_id;
     
     // Verificar si el usuario actual es el cliente, el representante o un administrador
     if (session.user.id !== clientUserId && session.user.id !== queuerUserId) {
@@ -491,6 +497,11 @@ export const PATCH = async ({ request, params }) => {
  * Función auxiliar para validar transiciones de estado
  */
 function isValidStatusTransition(currentStatus, newStatus, isClient) {
+  // Si el nuevo estado es 'cancelled', permitir siempre para estados que no sean finales
+  if (newStatus === 'cancelled' && !['completed', 'cancelled'].includes(currentStatus)) {
+    return true;
+  }
+
   // Reglas de transición de estados
   const allowedTransitions = {
     // Tanto clientes como representantes pueden cancelar una reserva pendiente o confirmada

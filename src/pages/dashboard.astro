@@ -1,7 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { supabase } from '../lib/supabase.ts';
-import { getSession, getProfileByUserId, getClientReservations } from '../lib/supabase.ts';
+import { supabase } from '../lib/supabase';
+import { getSession, getProfileByUserId, getClientReservations } from '../lib/supabase';
 import type { Profile, Reservation, ReservationStatus } from '../types/database.types';
 
 // Verificar si el usuario está autenticado
@@ -155,19 +155,37 @@ function getStatusInfo(status: ReservationStatus | string | null | undefined): {
           </div>
           
           <div class="text-center md:text-left">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">{profile?.name}</h1>
-            <p class="text-lg text-gray-600 dark:text-gray-400 mb-4">{profile?.email}</p>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2" id="profile-name">{profile?.name}</h1>
+            <p class="text-lg text-gray-600 dark:text-gray-400 mb-4" id="profile-email">{profile?.email}</p>
+            
+            {profile?.phone && (
+              <p class="text-md text-gray-600 dark:text-gray-400 mb-2" id="profile-phone">
+                <span class="font-medium">Teléfono:</span> {profile.phone}
+              </p>
+            )}
+            
+            {profile?.city && (
+              <p class="text-md text-gray-600 dark:text-gray-400 mb-4" id="profile-city">
+                <span class="font-medium">Ciudad:</span> {profile.city}
+              </p>
+            )}
+            
+            {profile?.user_type === 'queuer' && profile?.description && (
+              <p class="text-md text-gray-600 dark:text-gray-400 mb-4" id="profile-description">
+                <span class="font-medium">Descripción:</span> {profile.description}
+              </p>
+            )}
             
             <div class="flex flex-wrap gap-2 justify-center md:justify-start">
-              <a 
-                href="/profile" 
+              <button 
+                id="edit-profile-btn"
                 class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
                 Editar Perfil
-              </a>
+              </button>
               
               {profile?.user_type === 'client' && (
                 <a 
@@ -242,7 +260,7 @@ function getStatusInfo(status: ReservationStatus | string | null | undefined): {
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                               <div class="text-sm text-gray-900 dark:text-white">{formatDate(reservation.date)}</div>
-                              <div class="text-sm text-gray-500 dark:text-gray-400">{reservation.location}</div>
+                              <div class="text-sm text-gray-500 dark:text-gray-400">{reservation.services?.name || 'Ubicación no disponible'}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                               <span class={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-${statusInfo.color}-100 text-${statusInfo.color}-800 dark:bg-${statusInfo.color}-900 dark:text-${statusInfo.color}-200`}>
@@ -262,6 +280,18 @@ function getStatusInfo(status: ReservationStatus | string | null | undefined): {
                                   class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                                   data-reservation-id={reservation.id}
                                   data-action="cancel"
+                                  title={`Cancelar reserva ${reservation.id}`}
+                                >
+                                  Cancelar
+                                </button>
+                              )}
+                              
+                              {reservation.status === 'confirmed' && (
+                                <button 
+                                  class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                                  data-reservation-id={reservation.id}
+                                  data-action="cancel"
+                                  title={`Cancelar reserva ${reservation.id}`}
                                 >
                                   Cancelar
                                 </button>
@@ -364,7 +394,7 @@ function getStatusInfo(status: ReservationStatus | string | null | undefined): {
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                               <div class="text-sm text-gray-900 dark:text-white">{formatDate(reservation.date)}</div>
-                              <div class="text-sm text-gray-500 dark:text-gray-400">{reservation.location}</div>
+                              <div class="text-sm text-gray-500 dark:text-gray-400">{reservation.services?.name || 'Ubicación no disponible'}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                               <span class={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-${statusInfo.color}-100 text-${statusInfo.color}-800 dark:bg-${statusInfo.color}-900 dark:text-${statusInfo.color}-200`}>
@@ -411,35 +441,220 @@ function getStatusInfo(status: ReservationStatus | string | null | undefined): {
       </div>
     )}
   </div>
+  
+  <!-- Modal de edición de perfil -->
+  <div id="edit-profile-modal" class="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center hidden backdrop-blur-sm transition-all duration-300 ease-in-out opacity-0">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto transform scale-95 transition-all duration-300 ease-in-out">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Editar Perfil</h2>
+          <button id="close-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <form id="profile-form" class="space-y-5">
+          <!-- Previsualización y carga de imagen -->
+          <div class="flex flex-col items-center mb-6">
+            <div class="relative group cursor-pointer hover:scale-105 transition-all duration-300" id="avatar-container">
+              <div class="w-32 h-32 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 mb-3 ring-4 ring-primary/20 transition-all duration-300 hover:ring-primary/50">
+                <img 
+                  id="avatar-preview"
+                  src={profile?.avatar_url || "/avatars/default.jpg"} 
+                  alt="Avatar" 
+                  class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  onerror="this.src='/avatars/default.jpg'; this.onerror=null;"
+                />
+              </div>
+              <div class="absolute inset-0 bg-black bg-opacity-40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300" id="avatar-overlay">
+                <div class="flex flex-col items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span class="text-white text-sm font-medium">Cambiar foto</span>
+                </div>
+              </div>
+              <input 
+                type="file" 
+                id="avatar-upload" 
+                accept="image/*" 
+                class="hidden"
+              />
+              <input 
+                type="hidden" 
+                id="avatar-base64" 
+                name="avatar_base64" 
+              />
+            </div>
+            <button 
+              type="button" 
+              id="trigger-upload" 
+              class="text-sm text-primary hover:text-primary-dark dark:text-blue-400 dark:hover:text-blue-300 font-medium mt-1 transition-colors"
+            >
+              Haz clic aquí para cambiar tu foto
+            </button>
+          </div>
+          
+          <div class="transition-all duration-300 ease-in-out hover:translate-y-[-2px]">
+            <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre completo</label>
+            <input 
+              type="text" 
+              id="name" 
+              name="name" 
+              value={profile?.name || ''} 
+              class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary focus:ring-primary dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-colors"
+              placeholder="Tu nombre completo"
+            />
+          </div>
+          
+          <div class="transition-all duration-300 ease-in-out hover:translate-y-[-2px]">
+            <label for="phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono</label>
+            <input 
+              type="tel" 
+              id="phone" 
+              name="phone" 
+              value={profile?.phone || ''} 
+              class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary focus:ring-primary dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-colors"
+              placeholder="Tu número de teléfono"
+            />
+          </div>
+          
+          <div class="transition-all duration-300 ease-in-out hover:translate-y-[-2px]">
+            <label for="city" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ciudad</label>
+            <input 
+              type="text" 
+              id="city" 
+              name="city" 
+              value={profile?.city || ''} 
+              class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary focus:ring-primary dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-colors"
+              placeholder="Tu ciudad"
+            />
+          </div>
+          
+          {profile?.user_type === 'queuer' && (
+            <div class="transition-all duration-300 ease-in-out hover:translate-y-[-2px]">
+              <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descripción</label>
+              <textarea 
+                id="description" 
+                name="description" 
+                rows="3" 
+                class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary focus:ring-primary dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-colors"
+                placeholder="Describe tus servicios y experiencia"
+              >{profile?.description || ''}</textarea>
+            </div>
+          )}
+          
+          <!-- Mensaje de estado -->
+          <div id="update-status" class="hidden py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ease-in-out"></div>
+          
+          <div class="flex justify-end space-x-3 pt-4">
+            <button 
+              type="button" 
+              id="cancel-edit" 
+              class="px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-300 hover:scale-105"
+            >
+              Cancelar
+            </button>
+            <button 
+              type="submit" 
+              class="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all duration-300 hover:scale-105"
+            >
+              Guardar Cambios
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 </Layout>
 
 <script>
   // Función para cancelar una reserva
-  async function cancelReservation(reservationId: string) {
-    if (!reservationId) return;
+  async function cancelReservation(reservationId) {
+    if (!reservationId) {
+      console.error('ID de reserva no proporcionado');
+      alert('Error: No se pudo identificar la reserva a cancelar');
+      return;
+    }
+    
+    // Asegurarse de que el ID es una cadena de texto
+    reservationId = String(reservationId).trim();
+    
+    if (!reservationId) {
+      console.error('ID de reserva inválido después de convertir a string');
+      alert('Error: ID de reserva inválido');
+      return;
+    }
+    
+    console.log('ID de reserva a cancelar:', reservationId);
     
     const confirmed = confirm('¿Estás seguro que deseas cancelar esta reserva?');
     if (!confirmed) return;
     
     try {
-      const response = await fetch(`/api/reservations?id=${reservationId}`, {
-        method: 'PATCH',
+      // Mostrar indicador de carga
+      const loadingMessage = document.createElement('div');
+      loadingMessage.className = 'fixed top-0 left-0 w-full bg-blue-500 text-white text-center py-2 z-50';
+      loadingMessage.textContent = 'Cancelando reserva...';
+      document.body.appendChild(loadingMessage);
+      
+      console.log('Enviando solicitud para cancelar reserva:', reservationId);
+      
+      // Usar el nuevo endpoint específico para cancelar
+      const response = await fetch(`/api/reservation/cancel`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          status: 'cancelled'
+          reservationId: reservationId
         }),
       });
       
-      const data = await response.json();
+      console.log('Respuesta recibida:', response.status);
+      
+      // Eliminar indicador de carga
+      document.body.removeChild(loadingMessage);
+      
+      let data;
+      try {
+        data = await response.json();
+        console.log('Datos de respuesta:', data);
+      } catch (e) {
+        console.error('Error al parsear respuesta JSON:', e);
+        alert('Error al procesar la respuesta del servidor');
+        return;
+      }
       
       if (response.ok) {
-        alert('Reserva cancelada con éxito');
-        // Recargar la página para ver los cambios
-        window.location.reload();
+        // Mostrar mensaje de éxito
+        const successMessage = document.createElement('div');
+        successMessage.className = 'fixed top-0 left-0 w-full bg-green-500 text-white text-center py-2 z-50';
+        successMessage.textContent = 'Reserva cancelada con éxito';
+        document.body.appendChild(successMessage);
+        
+        // Eliminar el mensaje después de 3 segundos
+        setTimeout(() => {
+          document.body.removeChild(successMessage);
+          // Recargar la página para ver los cambios
+          window.location.reload();
+        }, 3000);
       } else {
-        alert(`Error al cancelar la reserva: ${data.message || 'Se produjo un error inesperado'}`);
+        console.error('Error al cancelar reserva:', data);
+        
+        // Mostrar mensaje de error
+        const errorMessage = document.createElement('div');
+        errorMessage.className = 'fixed top-0 left-0 w-full bg-red-500 text-white text-center py-2 z-50';
+        errorMessage.textContent = `Error al cancelar la reserva: ${data?.message || 'Se produjo un error inesperado'}`;
+        document.body.appendChild(errorMessage);
+        
+        // Eliminar el mensaje después de 5 segundos
+        setTimeout(() => {
+          document.body.removeChild(errorMessage);
+        }, 5000);
       }
     } catch (error) {
       console.error('Error al cancelar la reserva:', error);
@@ -449,13 +664,348 @@ function getStatusInfo(status: ReservationStatus | string | null | undefined): {
   
   // Agregar event listeners para los botones de cancelar
   document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('[data-action="cancel"]').forEach(button => {
-      button.addEventListener('click', function(this: HTMLElement) {
+    console.log('Inicializando event listeners para botones de cancelar');
+    
+    const cancelButtons = document.querySelectorAll('[data-action="cancel"]');
+    console.log('Botones de cancelar encontrados:', cancelButtons.length);
+    
+    cancelButtons.forEach(button => {
+      const reservationId = button.getAttribute('data-reservation-id');
+      console.log('Botón configurado para reserva ID:', reservationId);
+      
+      button.addEventListener('click', function() {
         const reservationId = this.getAttribute('data-reservation-id');
+        console.log('Botón de cancelar clickeado para reserva:', reservationId);
+        
         if (reservationId) {
           cancelReservation(reservationId);
+        } else {
+          console.error('No se encontró ID de reserva en el botón');
+          alert('Error: No se pudo identificar la reserva a cancelar');
         }
       });
     });
+  });
+  
+  // Funcionalidad del modal de edición de perfil
+  document.addEventListener('DOMContentLoaded', function() {
+    const editProfileBtn = document.getElementById('edit-profile-btn');
+    const editProfileModal = document.getElementById('edit-profile-modal');
+    const closeModalBtn = document.getElementById('close-modal');
+    const cancelEditBtn = document.getElementById('cancel-edit');
+    const profileForm = document.getElementById('profile-form') as HTMLFormElement;
+    const avatarPreview = document.getElementById('avatar-preview') as HTMLImageElement;
+    const avatarUpload = document.getElementById('avatar-upload') as HTMLInputElement;
+    const avatarBase64Input = document.getElementById('avatar-base64') as HTMLInputElement;
+    const updateStatus = document.getElementById('update-status');
+    const modalContent = editProfileModal?.querySelector('.bg-white');
+    const triggerUploadBtn = document.getElementById('trigger-upload');
+    const avatarContainer = document.getElementById('avatar-container');
+    const avatarOverlay = document.getElementById('avatar-overlay');
+    
+    // Configurar la carga de imágenes
+    if (avatarUpload) {
+      // Función para abrir el selector de archivos
+      const openFileSelector = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        console.log('Abriendo selector de archivos');
+        avatarUpload.click();
+      };
+      
+      // Asignar evento al botón explícito
+      if (triggerUploadBtn) {
+        triggerUploadBtn.addEventListener('click', openFileSelector);
+      }
+      
+      // Asignar evento al contenedor de la imagen
+      if (avatarContainer) {
+        avatarContainer.addEventListener('click', openFileSelector);
+      }
+      
+      // Asignar evento al overlay
+      if (avatarOverlay) {
+        avatarOverlay.addEventListener('click', openFileSelector);
+      }
+      
+      // Asignar evento a la imagen directamente
+      if (avatarPreview) {
+        avatarPreview.addEventListener('click', openFileSelector);
+      }
+      
+      // Verificar que el input file esté correctamente configurado
+      console.log('Input file configurado:', avatarUpload.id, avatarUpload.type, avatarUpload.accept);
+      
+      // Manejar la selección de archivos
+      avatarUpload.addEventListener('change', function(e) {
+        console.log('Evento change del input file activado');
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (!file) {
+          console.log('No se seleccionó ningún archivo');
+          return;
+        }
+        
+        console.log('Archivo seleccionado:', file.name, file.type, file.size);
+        
+        // Validar que sea una imagen
+        if (!file.type.startsWith('image/')) {
+          showUpdateStatus('Por favor, selecciona un archivo de imagen válido.', 'error');
+          return;
+        }
+        
+        // Validar tamaño (máximo 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          showUpdateStatus('La imagen es demasiado grande. El tamaño máximo es 5MB.', 'error');
+          return;
+        }
+        
+        // Leer y mostrar la imagen
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          console.log('Imagen cargada en FileReader');
+          if (event.target && typeof event.target.result === 'string') {
+            avatarPreview.src = event.target.result;
+            avatarBase64Input.value = event.target.result;
+            console.log('Vista previa actualizada');
+            
+            // Mostrar mensaje de éxito
+            showUpdateStatus('Imagen cargada correctamente. No olvides guardar los cambios.', 'success');
+            
+            // Añadir una animación a la imagen
+            avatarPreview.style.animation = 'pulse 0.5s ease-in-out';
+            setTimeout(() => {
+              avatarPreview.style.animation = '';
+            }, 500);
+          }
+        };
+        reader.onerror = function(error) {
+          console.error('Error al leer el archivo:', error);
+          showUpdateStatus('Error al procesar la imagen. Intenta con otra.', 'error');
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+    
+    // Función para mostrar mensajes de estado
+    function showUpdateStatus(message, type = 'info') {
+      if (!updateStatus) return;
+      
+      updateStatus.textContent = message;
+      updateStatus.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800', 'bg-blue-100', 'text-blue-800');
+      
+      switch (type) {
+        case 'success':
+          updateStatus.classList.add('bg-green-100', 'text-green-800');
+          break;
+        case 'error':
+          updateStatus.classList.add('bg-red-100', 'text-red-800');
+          break;
+        default:
+          updateStatus.classList.add('bg-blue-100', 'text-blue-800');
+      }
+      
+      updateStatus.classList.remove('hidden');
+      
+      // Añadir animación de entrada
+      (updateStatus as HTMLElement).style.animation = 'fadeInUp 0.3s ease-out forwards';
+    }
+    
+    // Abrir modal con animación
+    if (editProfileBtn && editProfileModal) {
+      editProfileBtn.addEventListener('click', function() {
+        // Mostrar el modal pero mantenerlo invisible para la animación
+        editProfileModal.classList.remove('hidden');
+        
+        // Forzar un reflow para que la transición funcione
+        void editProfileModal.offsetWidth;
+        
+        // Iniciar la animación
+        editProfileModal.classList.add('opacity-100');
+        if (modalContent) {
+          modalContent.classList.remove('scale-95');
+          modalContent.classList.add('scale-100');
+        }
+        
+        document.body.style.overflow = 'hidden'; // Prevenir scroll
+        
+        // Guardar la URL original de la imagen
+        if (avatarPreview) {
+          avatarPreview.setAttribute('data-original-src', avatarPreview.src);
+        }
+        
+        console.log('Modal abierto');
+      });
+    }
+    
+    // Cerrar modal con animación
+    const closeModal = function() {
+      // Iniciar la animación de salida
+      editProfileModal.classList.remove('opacity-100');
+      editProfileModal.classList.add('opacity-0');
+      
+      if (modalContent) {
+        modalContent.classList.remove('scale-100');
+        modalContent.classList.add('scale-95');
+      }
+      
+      // Esperar a que termine la animación antes de ocultar
+      setTimeout(() => {
+        editProfileModal.classList.add('hidden');
+        document.body.style.overflow = ''; // Restaurar scroll
+        
+        // Resetear mensajes
+        if (updateStatus) updateStatus.classList.add('hidden');
+        
+        // Restaurar la imagen de perfil original si se canceló
+        if (avatarPreview && !profileForm.getAttribute('data-submitted')) {
+          const originalSrc = avatarPreview.getAttribute('data-original-src') || '/avatars/default.jpg';
+          avatarPreview.src = originalSrc;
+        }
+        if (avatarBase64Input && !profileForm.getAttribute('data-submitted')) {
+          avatarBase64Input.value = '';
+        }
+        
+        // Resetear el flag de envío
+        if (profileForm) profileForm.removeAttribute('data-submitted');
+      }, 300); // Coincidir con la duración de la transición
+      
+      console.log('Modal cerrado');
+    };
+    
+    if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
+    if (cancelEditBtn) cancelEditBtn.addEventListener('click', closeModal);
+    
+    // Cerrar modal al hacer clic fuera
+    editProfileModal.addEventListener('click', function(e) {
+      if (e.target === editProfileModal) {
+        closeModal();
+      }
+    });
+    
+    // Manejar envío del formulario
+    if (profileForm) {
+      profileForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Marcar el formulario como enviado
+        profileForm.setAttribute('data-submitted', 'true');
+        
+        showUpdateStatus('Guardando cambios...', 'info');
+        
+        try {
+          const formData = new FormData(profileForm);
+          const profileData = Object.fromEntries(formData.entries());
+          
+          console.log('Enviando datos de perfil:', profileData);
+          
+          // Enviar datos al servidor
+          const response = await fetch('/api/profile/update', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(profileData),
+          });
+          
+          const data = await response.json();
+          
+          if (response.ok) {
+            showUpdateStatus('¡Perfil actualizado con éxito!', 'success');
+            
+            // Actualizar los datos mostrados en la página sin recargar
+            const nameElement = document.getElementById('profile-name');
+            const phoneElement = document.getElementById('profile-phone');
+            const cityElement = document.getElementById('profile-city');
+            const descriptionElement = document.getElementById('profile-description');
+            const profileImage = document.querySelector('.w-32.h-32.rounded-full img') as HTMLImageElement;
+            
+            if (nameElement && profileData.name) nameElement.textContent = String(profileData.name);
+            
+            // Actualizar teléfono con formato
+            if (phoneElement && profileData.phone) {
+              const phoneText = phoneElement.querySelector('span:first-child');
+              if (phoneText) {
+                phoneElement.innerHTML = `<span class="font-medium">Teléfono:</span> ${String(profileData.phone)}`;
+              } else {
+                phoneElement.textContent = String(profileData.phone);
+              }
+            }
+            
+            // Actualizar ciudad con formato
+            if (cityElement && profileData.city) {
+              const cityText = cityElement.querySelector('span:first-child');
+              if (cityText) {
+                cityElement.innerHTML = `<span class="font-medium">Ciudad:</span> ${String(profileData.city)}`;
+              } else {
+                cityElement.textContent = String(profileData.city);
+              }
+            }
+            
+            // Actualizar descripción con formato
+            if (descriptionElement && profileData.description) {
+              const descText = descriptionElement.querySelector('span:first-child');
+              if (descText) {
+                descriptionElement.innerHTML = `<span class="font-medium">Descripción:</span> ${String(profileData.description)}`;
+              } else {
+                descriptionElement.textContent = String(profileData.description);
+              }
+            }
+            
+            // Actualizar imagen de perfil si se cambió
+            if (profileImage && data.data && data.data.avatar_url) {
+              profileImage.src = data.data.avatar_url;
+              
+              // Añadir una pequeña animación a la imagen actualizada
+              profileImage.style.animation = 'pulse 0.5s ease-in-out';
+              setTimeout(() => {
+                profileImage.style.animation = '';
+              }, 500);
+            }
+            
+            // Cerrar modal después de 2 segundos
+            setTimeout(() => {
+              closeModal();
+            }, 2000);
+          } else {
+            showUpdateStatus(`Error: ${data?.message || 'No se pudo actualizar el perfil'}`, 'error');
+          }
+        } catch (error) {
+          console.error('Error al actualizar perfil:', error);
+          showUpdateStatus('Error de conexión. Inténtalo de nuevo.', 'error');
+        }
+      });
+    }
+  });
+  
+  // Añadir estilos de animación
+  document.addEventListener('DOMContentLoaded', function() {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+    `;
+    document.head.appendChild(style);
   });
 </script> 
