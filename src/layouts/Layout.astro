@@ -98,17 +98,33 @@ const criticalResources: CriticalResource[] = [
 		<!-- Contenido principal -->
 		<slot />
 		
-		<!-- Script para detección de modo oscuro para mejorar CLS -->
-		<script is:inline>
-			// Verifica si debemos usar modo oscuro
-			const userPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-			const storedTheme = localStorage.getItem('theme') || 'auto';
-			
-			// Aplicar tema oscuro inmediatamente si es necesario (evita destello en modo claro)
-			if (storedTheme === 'dark' || (storedTheme === 'auto' && userPrefersDark)) {
-				document.documentElement.classList.add('dark');
-			}
-		</script>
+		<!-- Botón de notificaciones e iniciar sesión -->
+		<div class="flex items-center space-x-4">
+			<!-- Notificaciones -->
+			<div class="relative">
+				<button id="notifications-button" class="relative z-10 block p-2 bg-gray-800 rounded-full focus:outline-none">
+					<svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+					</svg>
+				</button>
+				<div id="notifications-menu" class="hidden absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden z-20">
+					<!-- Aquí se mostrarán las notificaciones -->
+				</div>
+			</div>
+			<!-- Iniciar sesión -->
+			<div class="relative">
+				<button id="user-menu-button" class="relative z-10 block p-2 bg-gray-800 rounded-full focus:outline-none">
+					<svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A4.992 4.992 0 0112 15a4.992 4.992 0 016.879 2.804M12 7a4 4 0 110-8 4 4 0 010 8z" />
+					</svg>
+				</button>
+				<div id="user-menu" class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden z-20">
+					<a href="/login" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600">Iniciar sesión</a>
+				</div>
+			</div>
+		</div>
+		
+		
 		
 		<!-- Unificado los scripts en uno solo para mejorar el rendimiento -->
 		<script is:inline>

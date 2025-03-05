@@ -94,45 +94,21 @@ const cacheFirstStrategy = (request) => {
 // Estrategia para la API: Network First con tiempo límite, luego caché
 const networkFirstWithTimeout = async (request) => {
   const timeoutDuration = 3000; // 3 segundos
-  
-  // Intentar recuperar de la red primero, con un tiempo límite
-  const networkPromise = fetch(request.clone())
-    .then((networkResponse) => {
-      // Cachear la respuesta de la API solo si fue exitosa
-      if (networkResponse.ok) {
-        const clonedResponse = networkResponse.clone();
-        caches.open(CACHE_NAME)
-          .then((cache) => cache.put(request, clonedResponse));
-      }
-      
-      return networkResponse;
-    });
-  
-  // Promesa para el tiempo límite
-  const timeoutPromise = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error('Tiempo de espera agotado')), timeoutDuration);
-  });
-  
   try {
-    // Race entre la red y el tiempo límite
-    return await Promise.race([networkPromise, timeoutPromise]);
-  } catch (error) {
-    console.log('Usando caché para la API debido a:', error.message);
-    
-    // Si la red falla o tarda demasiado, intentar desde caché
-    const cachedResponse = await caches.match(request);
-    if (cachedResponse) {
-      return cachedResponse;
+    const networkResponse = await Promise.race([
+      fetch(request.clone()),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeoutDuration))
+    ]);
+    if (networkResponse.ok) {
+      const clonedResponse = networkResponse.clone();
+      caches.open(CACHE_NAME).then((cache) => cache.put(request, clonedResponse));
     }
-    
-    // Si no hay caché, devolver un error amigable
-    return new Response(JSON.stringify({
-      error: 'No se pudieron cargar los datos',
-      offline: true
-    }), {
-      status: 503,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return networkResponse;
+  } catch (error) {
+    if (request.destination === 'image') {
+      return caches.match('/images/fallback.png');
+    }
+    return new Response('Error de conexión', { status: 503 });
   }
 };
 
@@ -205,4 +181,4 @@ function openDatabase() {
     request.onsuccess = (event) => resolve(event.target.result);
     request.onerror = (event) => reject(event.target.error);
   });
-} 
+}

@@ -48,24 +48,20 @@ let services: Service[] = [];
 let error: string | null = null;
 
 try {
-  // Parallel fetch for better performance
   const [citiesResult, servicesResult, queuersResult] = await Promise.all([
     getQueuerCities(),
     getAllQueuerServices(),
     getQueuers(filters)
   ]);
-  
-  // Process results
   cities = citiesResult.data || [];
   services = servicesResult.data || [];
-  
   if (queuersResult.error) {
     throw queuersResult.error;
   }
   queuers = queuersResult.data || [];
 } catch (err) {
-  console.error("Error fetching data:", err);
-  error = "Error al cargar los datos. Por favor, intenta de nuevo más tarde.";
+  console.error('Error fetching data:', err);
+  error = 'Error al cargar los datos. Por favor, intenta de nuevo más tarde.';
 }
 
 // Current filter state to pass to components
@@ -124,4 +120,4 @@ const currentFilters = {
       )}
     </div>
   </div>
-</AppLayout> 
+</AppLayout>

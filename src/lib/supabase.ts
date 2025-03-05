@@ -389,15 +389,12 @@ export async function getAllQueuerServices() {
       .from('services')
       .select('id, name, description, code, category')
       .order('name');
-    
     if (error) {
-      console.error('Error al obtener todos los servicios:', error);
-      return { data: null, error };
+      throw error;
     }
-    
     return { data, error: null };
   } catch (e) {
-    console.error('Error inesperado al obtener todos los servicios:', e);
+    console.error('Error al obtener todos los servicios:', e);
     return { data: null, error: e };
   }
 }
@@ -628,4 +625,4 @@ export async function getQueuersByService(serviceId: string) {
     .order('rating', { ascending: false });
   
   return { data, error };
-} 
+}
